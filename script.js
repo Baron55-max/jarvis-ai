@@ -1,5 +1,5 @@
 // ================================
-// JARVIS V3.2 - COMMAND SYSTEM
+// JARVIS V3.3 - VOICE RESPONSE FIX
 // ================================
 
 const input = document.getElementById("commandInput");
@@ -17,6 +17,7 @@ const coreWrapper = document.querySelector(".core-wrapper");
 // ================================
 
 function setCoreState(state) {
+
     core.className = "ai-core " + state;
     coreWrapper.className = "core-wrapper " + state;
 }
@@ -30,11 +31,12 @@ function updateTime() {
 
     const now = new Date();
 
-    systemTime.textContent = now.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit"
-    });
+    systemTime.textContent =
+        now.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit"
+        });
 }
 
 setInterval(updateTime, 1000);
@@ -42,7 +44,35 @@ updateTime();
 
 
 // ================================
-// JARVIS VOICE
+// VOICE ENGINE
+// ================================
+
+let speechReady = false;
+
+function prepareSpeech() {
+
+    if (!("speechSynthesis" in window)) {
+        return false;
+    }
+
+    window.speechSynthesis.cancel();
+
+    // Create a short silent utterance to wake
+    // the browser's speech engine.
+    const warmup = new SpeechSynthesisUtterance("");
+
+    warmup.volume = 0;
+
+    window.speechSynthesis.speak(warmup);
+
+    speechReady = true;
+
+    return true;
+}
+
+
+// ================================
+// JARVIS SPEAK
 // ================================
 
 function speak(text) {
@@ -62,10 +92,22 @@ function speak(text) {
     voice.volume = 1;
 
     voice.onend = function() {
+
         setCoreState("idle");
     };
 
-    window.speechSynthesis.speak(voice);
+    voice.onerror = function() {
+
+        setCoreState("idle");
+    };
+
+    // Small delay makes speech synthesis more reliable
+    // after microphone recognition on iPad.
+    setTimeout(function() {
+
+        window.speechSynthesis.speak(voice);
+
+    }, 100);
 }
 
 
@@ -90,19 +132,18 @@ function calculateExpression(text) {
         .replace(/times/gi, "*")
         .replace(/multiplied by/gi, "*")
         .replace(/divided by/gi, "/")
-        .replace(/divide by/gi, "/")
-        .replace(/percent of/gi, "*0.01*");
+        .replace(/divide by/gi, "/");
 
-    // Allow only numbers and basic math symbols
     if (!/^[0-9+\-*/().%\s]+$/.test(expression)) {
         return null;
     }
 
     try {
 
-        const result = Function(
-            `"use strict"; return (${expression})`
-        )();
+        const result =
+            Function(
+                `"use strict"; return (${expression})`
+            )();
 
         if (!Number.isFinite(result)) {
             return null;
@@ -137,14 +178,17 @@ function runCommand(command) {
 
         const now = new Date();
 
-        const time = now.toLocaleTimeString([], {
-            hour: "numeric",
-            minute: "2-digit"
-        });
+        const time =
+            now.toLocaleTimeString([], {
+                hour: "numeric",
+                minute: "2-digit"
+            });
 
-        const reply = `The current time is ${time}.`;
+        const reply =
+            `The current time is ${time}.`;
 
         response.textContent = reply;
+
         speak(reply);
 
         return true;
@@ -163,16 +207,19 @@ function runCommand(command) {
 
         const now = new Date();
 
-        const date = now.toLocaleDateString([], {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric"
-        });
+        const date =
+            now.toLocaleDateString([], {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric"
+            });
 
-        const reply = `Today is ${date}.`;
+        const reply =
+            `Today is ${date}.`;
 
         response.textContent = reply;
+
         speak(reply);
 
         return true;
@@ -191,13 +238,16 @@ function runCommand(command) {
         text.includes("compute")
     ) {
 
-        const result = calculateExpression(text);
+        const result =
+            calculateExpression(text);
 
         if (result !== null) {
 
-            const reply = `The answer is ${result}.`;
+            const reply =
+                `The answer is ${result}.`;
 
             response.textContent = reply;
+
             speak(reply);
 
             return true;
@@ -206,21 +256,25 @@ function runCommand(command) {
 
 
     // ================================
-    // OPEN YOUTUBE
+    // YOUTUBE
     // ================================
 
     if (text.includes("open youtube")) {
 
-        const reply = "Opening YouTube.";
+        const reply =
+            "Opening YouTube.";
 
         response.textContent = reply;
+
         speak(reply);
 
-        setTimeout(() => {
+        setTimeout(function() {
+
             window.open(
                 "https://www.youtube.com",
                 "_blank"
             );
+
         }, 700);
 
         return true;
@@ -228,21 +282,25 @@ function runCommand(command) {
 
 
     // ================================
-    // OPEN GOOGLE
+    // GOOGLE
     // ================================
 
     if (text.includes("open google")) {
 
-        const reply = "Opening Google.";
+        const reply =
+            "Opening Google.";
 
         response.textContent = reply;
+
         speak(reply);
 
-        setTimeout(() => {
+        setTimeout(function() {
+
             window.open(
                 "https://www.google.com",
                 "_blank"
             );
+
         }, 700);
 
         return true;
@@ -250,21 +308,25 @@ function runCommand(command) {
 
 
     // ================================
-    // OPEN GITHUB
+    // GITHUB
     // ================================
 
     if (text.includes("open github")) {
 
-        const reply = "Opening GitHub.";
+        const reply =
+            "Opening GitHub.";
 
         response.textContent = reply;
+
         speak(reply);
 
-        setTimeout(() => {
+        setTimeout(function() {
+
             window.open(
                 "https://github.com",
                 "_blank"
             );
+
         }, 700);
 
         return true;
@@ -285,6 +347,7 @@ function runCommand(command) {
             "Good evening. JARVIS systems are online. How may I assist you?";
 
         response.textContent = reply;
+
         speak(reply);
 
         return true;
@@ -301,7 +364,8 @@ function runCommand(command) {
 
 function sendCommand() {
 
-    const command = input.value.trim();
+    const command =
+        input.value.trim();
 
     if (!command) {
         return;
@@ -309,7 +373,8 @@ function sendCommand() {
 
     input.value = "";
 
-    const handled = runCommand(command);
+    const handled =
+        runCommand(command);
 
     if (!handled) {
 
@@ -317,6 +382,7 @@ function sendCommand() {
             "I don't have that command yet. My AI systems require an API connection for that request.";
 
         response.textContent = reply;
+
         speak(reply);
     }
 }
@@ -341,9 +407,9 @@ input.addEventListener(
     function(event) {
 
         if (event.key === "Enter") {
+
             sendCommand();
         }
-
     }
 );
 
@@ -368,20 +434,32 @@ const SpeechRecognition =
     window.SpeechRecognition ||
     window.webkitSpeechRecognition;
 
+
 if (SpeechRecognition) {
 
-    const recognition = new SpeechRecognition();
+    const recognition =
+        new SpeechRecognition();
 
     recognition.continuous = false;
+
     recognition.interimResults = false;
+
     recognition.lang = "en-US";
 
+
+    // ================================
+    // MICROPHONE BUTTON
+    // ================================
 
     micButton.addEventListener(
         "click",
         function() {
 
-            response.textContent = "Listening...";
+            // Prepare speech BEFORE listening.
+            prepareSpeech();
+
+            response.textContent =
+                "Listening...";
 
             setCoreState("listening");
 
@@ -392,31 +470,73 @@ if (SpeechRecognition) {
             } catch (error) {
 
                 console.log(error);
-
             }
-
         }
     );
 
 
-    recognition.onresult = function(event) {
+    // ================================
+    // VOICE RESULT
+    // ================================
 
-        const transcript =
-            event.results[0][0].transcript;
+    recognition.onresult =
+        function(event) {
 
-        input.value = transcript;
+            const transcript =
+                event.results[0][0].transcript;
 
-        sendCommand();
-    };
+            input.value =
+                transcript;
+
+            // Give recognition time to fully finish
+            // before starting speech.
+            setTimeout(
+                function() {
+
+                    sendCommand();
+
+                },
+                300
+            );
+        };
 
 
-    recognition.onerror = function() {
+    // ================================
+    // RECOGNITION END
+    // ================================
 
-        response.textContent =
-            "I couldn't hear you. Please try again.";
+    recognition.onend =
+        function() {
 
-        setCoreState("idle");
-    };
+            if (
+                core.classList.contains(
+                    "listening"
+                )
+            ) {
+
+                setCoreState("idle");
+            }
+        };
+
+
+    // ================================
+    // RECOGNITION ERROR
+    // ================================
+
+    recognition.onerror =
+        function(event) {
+
+            console.log(
+                "Speech recognition error:",
+                event.error
+            );
+
+            response.textContent =
+                "I couldn't hear you. Please try again.";
+
+            setCoreState("idle");
+        };
+
 
 } else {
 
@@ -428,7 +548,6 @@ if (SpeechRecognition) {
                 "Voice recognition isn't supported here.";
 
             setCoreState("idle");
-
         }
     );
 }
