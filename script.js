@@ -1,5 +1,5 @@
 // ==========================================
-// JARVIS V5.0 — VOICE + FREE WEB KNOWLEDGE
+// JARVIS V5.1 — VOICE + FREE WEB KNOWLEDGE
 // ==========================================
 
 const input = document.getElementById("commandInput");
@@ -59,6 +59,37 @@ function setCoreState(state) {
 
 
 // ==========================================
+// UNLOCK SPEECH
+// ==========================================
+
+function unlockSpeech() {
+
+    if (!("speechSynthesis" in window)) {
+        return;
+    }
+
+    try {
+
+        const silentUtterance =
+            new SpeechSynthesisUtterance("");
+
+        silentUtterance.volume = 0;
+        silentUtterance.rate = 10;
+
+        speechSynthesis.speak(silentUtterance);
+        speechSynthesis.cancel();
+
+    } catch (error) {
+
+        console.log(
+            "Speech unlock error:",
+            error
+        );
+    }
+}
+
+
+// ==========================================
 // SPEAK
 // ==========================================
 
@@ -68,24 +99,64 @@ function speak(text) {
         return;
     }
 
-    speechSynthesis.cancel();
+    if (!text) {
+        return;
+    }
 
-    const utterance =
-        new SpeechSynthesisUtterance(text);
+    try {
 
-    utterance.rate = 0.95;
-    utterance.pitch = 0.9;
-    utterance.volume = 1;
+        speechSynthesis.cancel();
 
-    utterance.onstart = () => {
-        setCoreState("speaking");
-    };
+        const utterance =
+            new SpeechSynthesisUtterance(text);
 
-    utterance.onend = () => {
-        setCoreState(null);
-    };
+        utterance.rate = 0.95;
+        utterance.pitch = 0.9;
+        utterance.volume = 1;
 
-    speechSynthesis.speak(utterance);
+        utterance.onstart = () => {
+            setCoreState("speaking");
+        };
+
+        utterance.onend = () => {
+            setCoreState(null);
+        };
+
+        utterance.onerror = (event) => {
+
+            console.log(
+                "Speech error:",
+                event
+            );
+
+            setCoreState(null);
+        };
+
+        speechSynthesis.speak(utterance);
+
+        setTimeout(() => {
+
+            try {
+                speechSynthesis.resume();
+            } catch {}
+
+        }, 100);
+
+        setTimeout(() => {
+
+            try {
+                speechSynthesis.resume();
+            } catch {}
+
+        }, 500);
+
+    } catch (error) {
+
+        console.log(
+            "Speak error:",
+            error
+        );
+    }
 }
 
 
@@ -143,6 +214,7 @@ function calculateExpression(text) {
         return result;
 
     } catch {
+
         return null;
     }
 }
@@ -161,7 +233,11 @@ function googleSearch(query) {
         .trim();
 
     if (!cleanQuery) {
-        reply("What would you like me to search for?");
+
+        reply(
+            "What would you like me to search for?"
+        );
+
         return;
     }
 
@@ -182,7 +258,7 @@ function googleSearch(query) {
 
 
 // ==========================================
-// OPEN WEBSITES
+// OPEN YOUTUBE
 // ==========================================
 
 function openYouTube() {
@@ -190,36 +266,50 @@ function openYouTube() {
     reply("Opening YouTube...");
 
     setTimeout(() => {
+
         window.location.href =
             "https://www.youtube.com";
+
     }, 1200);
 }
 
+
+// ==========================================
+// OPEN GOOGLE
+// ==========================================
 
 function openGoogle() {
 
     reply("Opening Google...");
 
     setTimeout(() => {
+
         window.location.href =
             "https://www.google.com";
+
     }, 1200);
 }
 
+
+// ==========================================
+// OPEN GITHUB
+// ==========================================
 
 function openGitHub() {
 
     reply("Opening GitHub...");
 
     setTimeout(() => {
+
         window.location.href =
             "https://github.com";
+
     }, 1200);
 }
 
 
 // ==========================================
-// TIME
+// TELL TIME
 // ==========================================
 
 function tellTime() {
@@ -241,7 +331,7 @@ function tellTime() {
 
 
 // ==========================================
-// DATE
+// TELL DATE
 // ==========================================
 
 function tellDate() {
@@ -320,8 +410,7 @@ function greeting() {
     const random =
         greetings[
             Math.floor(
-                Math.random() *
-                greetings.length
+                Math.random() * greetings.length
             )
         ];
 
@@ -348,8 +437,7 @@ async function askWebAI(question) {
                 method: "POST",
 
                 headers: {
-                    "Content-Type":
-                        "application/json"
+                    "Content-Type": "application/json"
                 },
 
                 body: JSON.stringify({
@@ -362,6 +450,7 @@ async function askWebAI(question) {
             await result.json();
 
         if (!result.ok) {
+
             throw new Error(
                 data.error ||
                 "Request failed"
@@ -369,12 +458,19 @@ async function askWebAI(question) {
         }
 
         if (!data.reply) {
+
             throw new Error(
                 "No response received"
             );
         }
 
-        reply(data.reply);
+        setCoreState(null);
+
+        // Speak the web answer
+        reply(
+            data.reply,
+            true
+        );
 
     } catch (error) {
 
@@ -382,6 +478,8 @@ async function askWebAI(question) {
             "JARVIS WEB ERROR:",
             error
         );
+
+        setCoreState(null);
 
         reply(
             "I couldn't access my web knowledge right now. " +
@@ -401,12 +499,14 @@ function smartResponse(text) {
         text.toLowerCase().trim();
 
     if (!q) {
+
         reply("I'm listening.");
+
         return;
     }
 
 
-    // Greetings
+    // GREETINGS
 
     if (
         q === "hello" ||
@@ -417,11 +517,12 @@ function smartResponse(text) {
     ) {
 
         greeting();
+
         return;
     }
 
 
-    // Identity
+    // IDENTITY
 
     if (
         q.includes("who are you") ||
@@ -429,11 +530,12 @@ function smartResponse(text) {
     ) {
 
         identity();
+
         return;
     }
 
 
-    // Capabilities
+    // CAPABILITIES
 
     if (
         q.includes("what can you do") ||
@@ -441,11 +543,12 @@ function smartResponse(text) {
     ) {
 
         capabilities();
+
         return;
     }
 
 
-    // Time
+    // TIME
 
     if (
         q.includes("what time is it") ||
@@ -454,11 +557,12 @@ function smartResponse(text) {
     ) {
 
         tellTime();
+
         return;
     }
 
 
-    // Date
+    // DATE
 
     if (
         q.includes("what is today's date") ||
@@ -468,11 +572,12 @@ function smartResponse(text) {
     ) {
 
         tellDate();
+
         return;
     }
 
 
-    // Google
+    // GOOGLE
 
     if (
         q === "open google" ||
@@ -480,11 +585,12 @@ function smartResponse(text) {
     ) {
 
         openGoogle();
+
         return;
     }
 
 
-    // YouTube
+    // YOUTUBE
 
     if (
         q === "open youtube" ||
@@ -492,11 +598,12 @@ function smartResponse(text) {
     ) {
 
         openYouTube();
+
         return;
     }
 
 
-    // GitHub
+    // GITHUB
 
     if (
         q === "open github" ||
@@ -504,11 +611,12 @@ function smartResponse(text) {
     ) {
 
         openGitHub();
+
         return;
     }
 
 
-    // Google search
+    // GOOGLE SEARCH
 
     if (
         q.startsWith("search google for") ||
@@ -517,11 +625,12 @@ function smartResponse(text) {
     ) {
 
         googleSearch(text);
+
         return;
     }
 
 
-    // Coding
+    // CODING
 
     if (
         q.includes("help me with coding") ||
@@ -529,11 +638,12 @@ function smartResponse(text) {
     ) {
 
         codingHelp();
+
         return;
     }
 
 
-    // Calculator
+    // CALCULATOR
 
     const calculation =
         calculateExpression(text);
@@ -550,9 +660,7 @@ function smartResponse(text) {
     }
 
 
-    // ======================================
     // EVERYTHING ELSE → WEB KNOWLEDGE
-    // ======================================
 
     askWebAI(text);
 }
@@ -583,7 +691,13 @@ function sendCommand() {
 
 sendButton.addEventListener(
     "click",
-    sendCommand
+    () => {
+
+        unlockSpeech();
+
+        sendCommand();
+
+    }
 );
 
 
@@ -596,7 +710,11 @@ input.addEventListener(
     (event) => {
 
         if (event.key === "Enter") {
+
+            unlockSpeech();
+
             sendCommand();
+
         }
 
     }
@@ -608,6 +726,8 @@ input.addEventListener(
 // ==========================================
 
 function quickCommand(command) {
+
+    unlockSpeech();
 
     input.value = command;
 
@@ -623,6 +743,7 @@ const SpeechRecognition =
     window.SpeechRecognition ||
     window.webkitSpeechRecognition;
 
+
 if (SpeechRecognition) {
 
     recognition =
@@ -633,6 +754,8 @@ if (SpeechRecognition) {
     recognition.lang = "en-US";
 
 
+    // VOICE START
+
     recognition.onstart = () => {
 
         isListening = true;
@@ -641,8 +764,11 @@ if (SpeechRecognition) {
 
         response.textContent =
             "Listening...";
+
     };
 
+
+    // VOICE RESULT
 
     recognition.onresult = (event) => {
 
@@ -654,8 +780,11 @@ if (SpeechRecognition) {
         isListening = false;
 
         smartResponse(transcript);
+
     };
 
+
+    // VOICE ERROR
 
     recognition.onerror = (event) => {
 
@@ -667,6 +796,7 @@ if (SpeechRecognition) {
             "Voice error:",
             event.error
         );
+
 
         if (event.error === "not-allowed") {
 
@@ -680,9 +810,12 @@ if (SpeechRecognition) {
             reply(
                 "I couldn't understand that. Please try again."
             );
+
         }
     };
 
+
+    // VOICE END
 
     recognition.onend = () => {
 
@@ -694,19 +827,28 @@ if (SpeechRecognition) {
         ) {
 
             setCoreState(null);
+
         }
     };
 
+
+    // MICROPHONE BUTTON
 
     micButton.addEventListener(
         "click",
         () => {
 
+            // Unlock speech BEFORE listening
+            unlockSpeech();
+
+
             if (isListening) {
 
                 recognition.stop();
+
                 return;
             }
+
 
             try {
 
@@ -714,12 +856,15 @@ if (SpeechRecognition) {
 
             } catch (error) {
 
-                console.log(error);
+                console.log(
+                    "Recognition start error:",
+                    error
+                );
 
             }
-
         }
     );
+
 
 } else {
 
@@ -736,6 +881,10 @@ if (SpeechRecognition) {
 }
 
 
+// ==========================================
+// STARTUP
+// ==========================================
+
 console.log(
-    "JARVIS V5.0 ONLINE"
+    "JARVIS V5.1 ONLINE"
 );
