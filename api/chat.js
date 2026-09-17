@@ -1,5 +1,5 @@
 // ==========================================
-// JARVIS FREE WEB KNOWLEDGE API V2
+// JARVIS FREE WEB KNOWLEDGE API V3
 // ==========================================
 
 export default async function handler(req, res) {
@@ -26,7 +26,7 @@ export default async function handler(req, res) {
 
 
         // ==========================================
-        // SEARCH WIKIPEDIA
+        // WIKIPEDIA SEARCH
         // ==========================================
 
         const searchURL =
@@ -35,21 +35,30 @@ export default async function handler(req, res) {
             "&list=search" +
             "&srsearch=" +
             encodeURIComponent(question) +
-            "&srlimit=3" +
+            "&srlimit=5" +
+            "&srprop=snippet" +
             "&format=json" +
             "&origin=*";
 
         const searchResponse =
-            await fetch(searchURL);
+            await fetch(searchURL, {
+                headers: {
+                    "User-Agent":
+                        "JARVIS-AI/1.0"
+                }
+            });
+
 
         if (!searchResponse.ok) {
             throw new Error(
-                "Wikipedia search failed"
+                "Web search failed"
             );
         }
 
+
         const searchData =
             await searchResponse.json();
+
 
         const results =
             searchData?.query?.search || [];
@@ -63,60 +72,93 @@ export default async function handler(req, res) {
 
             return res.status(200).json({
                 reply:
-                    "I couldn't find useful information about that. " +
-                    "You can ask me to search Google instead."
+                    "I couldn't find information about that on the web. " +
+                    "Try asking me to search Google."
             });
 
         }
 
 
         // ==========================================
-        // GET BEST ARTICLE
+        // BUILD ANSWER FROM SEARCH RESULTS
         // ==========================================
 
-        const title =
-            results[0].title;
+        let answer = "";
 
 
-        const summaryURL =
-            "https://en.wikipedia.org/api/rest_v1/page/summary/" +
-            encodeURIComponent(title);
+        const usefulResults =
+            results.slice(0, 3);
 
 
-        const summaryResponse =
-            await fetch(summaryURL);
+        usefulResults.forEach((item, index) => {
+
+            let snippet =
+                item.snippet || "";
 
 
-        if (!summaryResponse.ok) {
-            throw new Error(
-                "Wikipedia summary failed"
-            );
-        }
+            // Remove HTML tags from Wikipedia snippets
+            snippet =
+                snippet.replace(
+                    /<[^>]*>/g,
+                    ""
+                );
 
 
-        const summaryData =
-            await summaryResponse.json();
+            // Decode common HTML entities
+            snippet =
+                snippet
+                    .replace(/&quot;/g, '"')
+                    .replace(/&#39;/g, "'")
+                    .replace(/&amp;/g, "&")
+                    .replace(/&lt;/g, "<")
+                    .replace(/&gt;/g, ">");
 
 
-        let answer =
-            summaryData?.extract;
+            if (snippet) {
+
+                if (index === 0) {
+
+                    answer +=
+                        snippet + " ";
+
+                } else {
+
+                    answer +=
+                        snippet + " ";
+
+                }
+            }
+
+        });
 
 
         // ==========================================
-        // FALLBACK
+        // CLEAN ANSWER
+        // ==========================================
+
+        answer =
+            answer.replace(
+                /\s+/g,
+                " "
+            ).trim();
+
+
+        // ==========================================
+        // FALLBACK TO ARTICLE TITLE
         // ==========================================
 
         if (!answer) {
 
             answer =
                 "I found information about " +
-                title +
-                ", but I couldn't retrieve the full details.";
+                results[0].title +
+                " on Wikipedia.";
+
         }
 
 
         // ==========================================
-        // LIMIT RESPONSE LENGTH
+        // KEEP ANSWER SHORT
         // ==========================================
 
         if (answer.length > 1000) {
@@ -141,7 +183,7 @@ export default async function handler(req, res) {
 
 
         // ==========================================
-        // SEND RESPONSE
+        // SEND ANSWER
         // ==========================================
 
         return res.status(200).json({
@@ -150,16 +192,18 @@ export default async function handler(req, res) {
 
             source: "Wikipedia",
 
-            title: title
+            title: results[0].title
 
         });
+
 
     } catch (error) {
 
         console.error(
-            "JARVIS API ERROR:",
+            "JARVIS WEB ERROR:",
             error
         );
+
 
         return res.status(500).json({
 
@@ -170,5 +214,6 @@ export default async function handler(req, res) {
                 error.message
 
         });
+
     }
 }
