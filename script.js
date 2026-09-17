@@ -1,5 +1,5 @@
 // ================================
-// JARVIS V3.4 - GOOGLE SEARCH
+// JARVIS V3.5 - VOICE + SEARCH FIX
 // ================================
 
 const input = document.getElementById("commandInput");
@@ -64,10 +64,6 @@ function prepareSpeech() {
     return true;
 }
 
-
-// ================================
-// JARVIS SPEAK
-// ================================
 
 function speak(text) {
 
@@ -181,9 +177,11 @@ function googleSearch(text) {
             "https://www.google.com/search?q=" +
             encodeURIComponent(query);
 
-        window.open(url, "_blank");
+        // Direct navigation works even when the
+        // command came from voice recognition.
+        window.location.href = url;
 
-    }, 1000);
+    }, 1200);
 
     return true;
 }
@@ -317,12 +315,10 @@ function runCommand(command) {
 
         setTimeout(function() {
 
-            window.open(
-                "https://www.youtube.com",
-                "_blank"
-            );
+            window.location.href =
+                "https://www.youtube.com";
 
-        }, 700);
+        }, 1200);
 
         return true;
     }
@@ -343,12 +339,10 @@ function runCommand(command) {
 
         setTimeout(function() {
 
-            window.open(
-                "https://www.google.com",
-                "_blank"
-            );
+            window.location.href =
+                "https://www.google.com";
 
-        }, 700);
+        }, 1200);
 
         return true;
     }
@@ -369,12 +363,10 @@ function runCommand(command) {
 
         setTimeout(function() {
 
-            window.open(
-                "https://github.com",
-                "_blank"
-            );
+            window.location.href =
+                "https://github.com";
 
-        }, 700);
+        }, 1200);
 
         return true;
     }
@@ -487,9 +479,7 @@ if (SpeechRecognition) {
         new SpeechRecognition();
 
     recognition.continuous = false;
-
     recognition.interimResults = false;
-
     recognition.lang = "en-US";
 
 
@@ -511,7 +501,6 @@ if (SpeechRecognition) {
             } catch (error) {
 
                 console.log(error);
-
             }
         }
     );
