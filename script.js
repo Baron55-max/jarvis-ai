@@ -1,5 +1,5 @@
 // ================================
-// JARVIS V3.3 - VOICE RESPONSE FIX
+// JARVIS V3.4 - GOOGLE SEARCH
 // ================================
 
 const input = document.getElementById("commandInput");
@@ -17,7 +17,6 @@ const coreWrapper = document.querySelector(".core-wrapper");
 // ================================
 
 function setCoreState(state) {
-
     core.className = "ai-core " + state;
     coreWrapper.className = "core-wrapper " + state;
 }
@@ -47,8 +46,6 @@ updateTime();
 // VOICE ENGINE
 // ================================
 
-let speechReady = false;
-
 function prepareSpeech() {
 
     if (!("speechSynthesis" in window)) {
@@ -57,15 +54,12 @@ function prepareSpeech() {
 
     window.speechSynthesis.cancel();
 
-    // Create a short silent utterance to wake
-    // the browser's speech engine.
-    const warmup = new SpeechSynthesisUtterance("");
+    const warmup =
+        new SpeechSynthesisUtterance("");
 
     warmup.volume = 0;
 
     window.speechSynthesis.speak(warmup);
-
-    speechReady = true;
 
     return true;
 }
@@ -85,24 +79,21 @@ function speak(text) {
 
     setCoreState("speaking");
 
-    const voice = new SpeechSynthesisUtterance(text);
+    const voice =
+        new SpeechSynthesisUtterance(text);
 
     voice.rate = 0.95;
     voice.pitch = 0.85;
     voice.volume = 1;
 
     voice.onend = function() {
-
         setCoreState("idle");
     };
 
     voice.onerror = function() {
-
         setCoreState("idle");
     };
 
-    // Small delay makes speech synthesis more reliable
-    // after microphone recognition on iPad.
     setTimeout(function() {
 
         window.speechSynthesis.speak(voice);
@@ -159,12 +150,53 @@ function calculateExpression(text) {
 
 
 // ================================
+// GOOGLE SEARCH
+// ================================
+
+function googleSearch(text) {
+
+    let query = text
+        .replace(/search google for/gi, "")
+        .replace(/search google/gi, "")
+        .replace(/google search for/gi, "")
+        .replace(/google/gi, "")
+        .replace(/search for/gi, "")
+        .replace(/search/gi, "")
+        .trim();
+
+    if (!query) {
+        return false;
+    }
+
+    const reply =
+        `Searching Google for ${query}.`;
+
+    response.textContent = reply;
+
+    speak(reply);
+
+    setTimeout(function() {
+
+        const url =
+            "https://www.google.com/search?q=" +
+            encodeURIComponent(query);
+
+        window.open(url, "_blank");
+
+    }, 1000);
+
+    return true;
+}
+
+
+// ================================
 // COMMAND SYSTEM
 // ================================
 
 function runCommand(command) {
 
-    const text = command.toLowerCase().trim();
+    const text =
+        command.toLowerCase().trim();
 
 
     // ================================
@@ -250,6 +282,21 @@ function runCommand(command) {
 
             speak(reply);
 
+            return true;
+        }
+    }
+
+
+    // ================================
+    // GOOGLE SEARCH
+    // ================================
+
+    if (
+        text.startsWith("search") ||
+        text.startsWith("google")
+    ) {
+
+        if (googleSearch(text)) {
             return true;
         }
     }
@@ -407,7 +454,6 @@ input.addEventListener(
     function(event) {
 
         if (event.key === "Enter") {
-
             sendCommand();
         }
     }
@@ -447,15 +493,10 @@ if (SpeechRecognition) {
     recognition.lang = "en-US";
 
 
-    // ================================
-    // MICROPHONE BUTTON
-    // ================================
-
     micButton.addEventListener(
         "click",
         function() {
 
-            // Prepare speech BEFORE listening.
             prepareSpeech();
 
             response.textContent =
@@ -470,14 +511,11 @@ if (SpeechRecognition) {
             } catch (error) {
 
                 console.log(error);
+
             }
         }
     );
 
-
-    // ================================
-    // VOICE RESULT
-    // ================================
 
     recognition.onresult =
         function(event) {
@@ -488,8 +526,6 @@ if (SpeechRecognition) {
             input.value =
                 transcript;
 
-            // Give recognition time to fully finish
-            // before starting speech.
             setTimeout(
                 function() {
 
@@ -500,10 +536,6 @@ if (SpeechRecognition) {
             );
         };
 
-
-    // ================================
-    // RECOGNITION END
-    // ================================
 
     recognition.onend =
         function() {
@@ -518,10 +550,6 @@ if (SpeechRecognition) {
             }
         };
 
-
-    // ================================
-    // RECOGNITION ERROR
-    // ================================
 
     recognition.onerror =
         function(event) {
