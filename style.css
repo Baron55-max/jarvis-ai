@@ -30,7 +30,9 @@ body {
     flex-direction: column;
 }
 
-/* TOP BAR */
+/* ================================
+   TOP BAR
+   ================================ */
 
 .top-bar {
     height: 70px;
@@ -78,7 +80,9 @@ body {
     box-shadow: 0 0 10px #00ff9d;
 }
 
-/* MAIN */
+/* ================================
+   MAIN
+   ================================ */
 
 .main {
     flex: 1;
@@ -90,7 +94,9 @@ body {
     position: relative;
 }
 
-/* AI CORE */
+/* ================================
+   AI CORE
+   ================================ */
 
 .core-wrapper {
     width: 250px;
@@ -100,6 +106,7 @@ body {
     align-items: center;
     justify-content: center;
     margin-bottom: 30px;
+    transition: transform 0.3s ease;
 }
 
 .ai-core {
@@ -107,14 +114,28 @@ body {
     height: 90px;
     border-radius: 50%;
     background:
-        radial-gradient(circle, #dffaff 0%, #00d9ff 15%, #007eaa 45%, #03141c 70%);
+        radial-gradient(
+            circle,
+            #dffaff 0%,
+            #00d9ff 15%,
+            #007eaa 45%,
+            #03141c 70%
+        );
+
     box-shadow:
         0 0 25px var(--cyan),
         0 0 60px var(--cyan-soft),
         inset 0 0 25px white;
+
     position: relative;
     z-index: 5;
+
     animation: corePulse 2.5s ease-in-out infinite;
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        filter 0.2s ease;
 }
 
 .core-light {
@@ -128,13 +149,18 @@ body {
     filter: blur(4px);
 }
 
-/* RINGS */
+/* ================================
+   RINGS
+   ================================ */
 
 .core-ring {
     position: absolute;
     border: 1px solid var(--cyan);
     border-radius: 50%;
     opacity: 0.45;
+    transition:
+        opacity 0.3s ease,
+        filter 0.3s ease;
 }
 
 .ring-1 {
@@ -159,7 +185,9 @@ body {
     animation: rotate 18s linear infinite;
 }
 
-/* TEXT */
+/* ================================
+   TEXT
+   ================================ */
 
 h1 {
     font-size: 32px;
@@ -174,7 +202,9 @@ h1 {
     margin-bottom: 25px;
 }
 
-/* RESPONSE */
+/* ================================
+   RESPONSE
+   ================================ */
 
 .response-box {
     width: min(650px, 90vw);
@@ -200,7 +230,9 @@ h1 {
     line-height: 1.5;
 }
 
-/* COMMAND */
+/* ================================
+   COMMAND
+   ================================ */
 
 .command-area {
     width: min(650px, 90vw);
@@ -250,7 +282,9 @@ h1 {
     font-weight: bold;
 }
 
-/* QUICK COMMANDS */
+/* ================================
+   QUICK COMMANDS
+   ================================ */
 
 .quick-commands {
     display: flex;
@@ -273,7 +307,9 @@ h1 {
     border-color: rgba(0, 217, 255, 0.4);
 }
 
-/* FOOTER */
+/* ================================
+   FOOTER
+   ================================ */
 
 footer {
     height: 45px;
@@ -286,7 +322,9 @@ footer {
     letter-spacing: 2px;
 }
 
-/* ANIMATIONS */
+/* ================================
+   NORMAL ANIMATIONS
+   ================================ */
 
 @keyframes pulse {
     0%, 100% {
@@ -330,7 +368,133 @@ footer {
     }
 }
 
-/* IPAD / PHONE */
+/* ================================
+   JARVIS LISTENING STATE
+   ================================ */
+
+.ai-core.listening {
+    animation: listeningCore 0.65s ease-in-out infinite alternate;
+
+    box-shadow:
+        0 0 35px var(--cyan),
+        0 0 90px rgba(0, 217, 255, 0.45),
+        inset 0 0 30px white;
+}
+
+.core-wrapper.listening .core-ring {
+    opacity: 0.75;
+}
+
+.core-wrapper.listening .ring-1 {
+    animation-duration: 2.5s;
+}
+
+.core-wrapper.listening .ring-2 {
+    animation-duration: 3.5s;
+}
+
+.core-wrapper.listening .ring-3 {
+    animation-duration: 5s;
+}
+
+@keyframes listeningCore {
+    from {
+        transform: scale(0.95);
+        filter: brightness(1);
+    }
+
+    to {
+        transform: scale(1.18);
+        filter: brightness(1.35);
+    }
+}
+
+/* ================================
+   JARVIS THINKING STATE
+   ================================ */
+
+.ai-core.thinking {
+    animation: thinkingCore 0.8s ease-in-out infinite alternate;
+
+    box-shadow:
+        0 0 30px var(--cyan),
+        0 0 80px rgba(0, 217, 255, 0.35),
+        inset 0 0 28px white;
+}
+
+.core-wrapper.thinking .core-ring {
+    opacity: 0.65;
+}
+
+.core-wrapper.thinking .ring-1 {
+    animation-duration: 3s;
+}
+
+.core-wrapper.thinking .ring-2 {
+    animation-duration: 4s;
+}
+
+.core-wrapper.thinking .ring-3 {
+    animation-duration: 6s;
+}
+
+@keyframes thinkingCore {
+    from {
+        transform: scale(0.98);
+        filter: brightness(1);
+    }
+
+    to {
+        transform: scale(1.1);
+        filter: brightness(1.2);
+    }
+}
+
+/* ================================
+   JARVIS SPEAKING STATE
+   ================================ */
+
+.ai-core.speaking {
+    animation: speakingCore 0.22s ease-in-out infinite alternate;
+
+    box-shadow:
+        0 0 45px var(--cyan),
+        0 0 110px rgba(0, 217, 255, 0.55),
+        inset 0 0 35px white;
+}
+
+.core-wrapper.speaking .core-ring {
+    opacity: 0.9;
+    filter: drop-shadow(0 0 5px var(--cyan));
+}
+
+.core-wrapper.speaking .ring-1 {
+    animation-duration: 1s;
+}
+
+.core-wrapper.speaking .ring-2 {
+    animation-duration: 1.5s;
+}
+
+.core-wrapper.speaking .ring-3 {
+    animation-duration: 2.5s;
+}
+
+@keyframes speakingCore {
+    from {
+        transform: scale(0.9);
+        filter: brightness(1);
+    }
+
+    to {
+        transform: scale(1.3);
+        filter: brightness(1.6);
+    }
+}
+
+/* ================================
+   IPAD / PHONE
+   ================================ */
 
 @media (max-width: 600px) {
 
@@ -379,62 +543,5 @@ footer {
 
     footer {
         padding: 0 20px;
-    }
-}
-/* ================================
-   JARVIS CORE STATES
-   ================================ */
-
-.ai-core.listening {
-    animation: coreListening 0.8s infinite alternate;
-}
-
-.ai-core.thinking {
-    animation: coreThinking 1.2s infinite alternate;
-}
-
-.ai-core.speaking {
-    animation: coreSpeaking 0.25s infinite alternate;
-}
-
-.core-wrapper.listening .core-ring {
-    animation-duration: 2s;
-}
-
-.core-wrapper.thinking .core-ring {
-    animation-duration: 1s;
-}
-
-.core-wrapper.speaking .core-ring {
-    animation-duration: 0.5s;
-}
-
-@keyframes coreListening {
-    from {
-        transform: scale(1);
-    }
-
-    to {
-        transform: scale(1.15);
-    }
-}
-
-@keyframes coreThinking {
-    from {
-        transform: scale(1);
-    }
-
-    to {
-        transform: scale(1.08);
-    }
-}
-
-@keyframes coreSpeaking {
-    from {
-        transform: scale(1);
-    }
-
-    to {
-        transform: scale(1.2);
     }
 }
