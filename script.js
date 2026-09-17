@@ -1,5 +1,5 @@
 // ================================
-// JARVIS V2 - AI CONNECTION
+// JARVIS V3 - COMMAND SYSTEM
 // ================================
 
 const input = document.getElementById("commandInput");
@@ -50,47 +50,122 @@ function speak(text) {
 
 
 // ================================
-// TALK TO JARVIS AI
+// COMMAND SYSTEM
 // ================================
 
-async function askJarvis(message) {
+function runCommand(command) {
 
-    response.textContent = "Thinking...";
+    const text = command.toLowerCase().trim();
 
-    try {
+    // TIME
+    if (text.includes("what time") || text === "time") {
 
-        const result = await fetch("/api/chat", {
+        const now = new Date();
 
-            method: "POST",
-
-            headers: {
-                "Content-Type": "application/json"
-            },
-
-            body: JSON.stringify({
-                message: message
-            })
-
+        const time = now.toLocaleTimeString([], {
+            hour: "numeric",
+            minute: "2-digit"
         });
 
-        const data = await result.json();
+        const reply = `The current time is ${time}.`;
 
-        if (!result.ok) {
-            throw new Error(data.error || "AI request failed");
-        }
+        response.textContent = reply;
+        speak(reply);
 
-        response.textContent = data.reply;
-
-        speak(data.reply);
-
-    } catch (error) {
-
-        console.error(error);
-
-        response.textContent =
-            "I can't reach my AI systems yet. Please make sure JARVIS is deployed correctly.";
-
+        return true;
     }
+
+
+    // DATE
+    if (
+        text.includes("today's date") ||
+        text.includes("what date") ||
+        text === "date"
+    ) {
+
+        const now = new Date();
+
+        const date = now.toLocaleDateString([], {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric"
+        });
+
+        const reply = `Today is ${date}.`;
+
+        response.textContent = reply;
+        speak(reply);
+
+        return true;
+    }
+
+
+    // YOUTUBE
+    if (text.includes("open youtube")) {
+
+        const reply = "Opening YouTube.";
+
+        response.textContent = reply;
+        speak(reply);
+
+        setTimeout(() => {
+            window.open("https://www.youtube.com", "_blank");
+        }, 700);
+
+        return true;
+    }
+
+
+    // GOOGLE
+    if (text.includes("open google")) {
+
+        const reply = "Opening Google.";
+
+        response.textContent = reply;
+        speak(reply);
+
+        setTimeout(() => {
+            window.open("https://www.google.com", "_blank");
+        }, 700);
+
+        return true;
+    }
+
+
+    // GITHUB
+    if (text.includes("open github")) {
+
+        const reply = "Opening GitHub.";
+
+        response.textContent = reply;
+        speak(reply);
+
+        setTimeout(() => {
+            window.open("https://github.com", "_blank");
+        }, 700);
+
+        return true;
+    }
+
+
+    // GREETING
+    if (
+        text === "hello" ||
+        text === "hi" ||
+        text.includes("hello jarvis")
+    ) {
+
+        const reply = "Good evening. JARVIS systems are online. How may I assist you?";
+
+        response.textContent = reply;
+        speak(reply);
+
+        return true;
+    }
+
+
+    return false;
 }
 
 
@@ -108,7 +183,16 @@ function sendCommand() {
 
     input.value = "";
 
-    askJarvis(command);
+    const handled = runCommand(command);
+
+    if (!handled) {
+
+        const reply =
+            "I don't have that command yet. My AI systems require an API connection for that request.";
+
+        response.textContent = reply;
+        speak(reply);
+    }
 }
 
 
