@@ -381,3 +381,60 @@ footer {
         padding: 0 20px;
     }
 }
+/* ================================
+   JARVIS CORE STATES
+   ================================ */
+
+.ai-core.listening {
+    animation: coreListening 0.8s infinite alternate;
+}
+
+.ai-core.thinking {
+    animation: coreThinking 1.2s infinite alternate;
+}
+
+.ai-core.speaking {
+    animation: coreSpeaking 0.25s infinite alternate;
+}
+
+.core-wrapper.listening .core-ring {
+    animation-duration: 2s;
+}
+
+.core-wrapper.thinking .core-ring {
+    animation-duration: 1s;
+}
+
+.core-wrapper.speaking .core-ring {
+    animation-duration: 0.5s;
+}
+
+@keyframes coreListening {
+    from {
+        transform: scale(1);
+    }
+
+    to {
+        transform: scale(1.15);
+    }
+}
+
+@keyframes coreThinking {
+    from {
+        transform: scale(1);
+    }
+
+    to {
+        transform: scale(1.08);
+    }
+}
+
+@keyframes coreSpeaking {
+    from {
+        transform: scale(1);
+    }
+
+    to {
+        transform: scale(1.2);
+    }
+}
