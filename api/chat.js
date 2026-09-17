@@ -1,7 +1,10 @@
+import OpenAI from "openai";
+
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
 });
 
 export default async function handler(req, res) {
-
     if (req.method !== "POST") {
         return res.status(405).json({
             error: "Method not allowed"
@@ -9,7 +12,6 @@ export default async function handler(req, res) {
     }
 
     try {
-
         const { message } = req.body;
 
         if (!message) {
@@ -18,40 +20,33 @@ export default async function handler(req, res) {
             });
         }
 
-        const response = await client.responses.create({
-
+        const result = await openai.responses.create({
             model: "gpt-5",
-
             instructions: `
-You are JARVIS, a highly capable personal AI assistant.
+You are JARVIS, a personal AI assistant.
 
-Your personality:
+Personality:
 - Calm
 - Intelligent
 - Helpful
-- Slightly futuristic
+- Futuristic
 - Professional but friendly
 
-Address the user naturally.
 Keep responses concise unless the user asks for detail.
-
-You are currently the user's personal JARVIS assistant.
-            `,
-
+`,
             input: message
-
         });
 
         return res.status(200).json({
-            reply: response.output_text
+            reply: result.output_text
         });
 
     } catch (error) {
-
-        console.error(error);
+        console.error("JARVIS ERROR:", error);
 
         return res.status(500).json({
             error: "JARVIS encountered a system error."
         });
     }
 }
+
