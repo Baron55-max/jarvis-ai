@@ -1,10 +1,9 @@
-import OpenAI from "openai";
-
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-});
+// ==========================================
+// JARVIS FREE WEB KNOWLEDGE API
+// ==========================================
 
 export default async function handler(req, res) {
+
     if (req.method !== "POST") {
         return res.status(405).json({
             error: "Method not allowed"
@@ -12,6 +11,7 @@ export default async function handler(req, res) {
     }
 
     try {
+
         const { message } = req.body;
 
         if (!message) {
@@ -20,33 +20,113 @@ export default async function handler(req, res) {
             });
         }
 
-        const result = await openai.responses.create({
-            model: "gpt-5",
-            instructions: `
-You are JARVIS, a personal AI assistant.
+        // Clean the user's question
+        const question = message
+            .replace(/^jarvis[:,]?\s*/i, "")
+            .trim();
 
-Personality:
-- Calm
-- Intelligent
-- Helpful
-- Futuristic
-- Professional but friendly
+        // ==========================================
+        // WIKIPEDIA SEARCH
+        // ==========================================
 
-Keep responses concise unless the user asks for detail.
-`,
-            input: message
-        });
+        const searchURL =
+            "https://en.wikipedia.org/w/api.php" +
+            "?action=query" +
+            "&list=search" +
+            "&srsearch=" +
+            encodeURIComponent(question) +
+            "&format=json" +
+            "&origin=*";
+
+        const searchResponse =
+            await fetch(searchURL);
+
+        if (!searchResponse.ok) {
+            throw new Error("Wikipedia search failed");
+        }
+
+        const searchData =
+            await searchResponse.json();
+
+        const results =
+            searchData?.query?.search || [];
+
+        if (results.length === 0) {
+
+            return res.status(200).json({
+                reply:
+                    "I couldn't find useful information about that. " +
+                    "Try asking me to search Google for it."
+            });
+
+        }
+
+        // ==========================================
+        // GET BEST RESULT
+        // ==========================================
+
+        const title = results[0].title;
+
+        const summaryURL =
+            "https://en.wikipedia.org/api/rest_v1/page/summary/" +
+            encodeURIComponent(title);
+
+        const summaryResponse =
+            await fetch(summaryURL);
+
+        if (!summaryResponse.ok) {
+            throw new Error("Wikipedia summary failed");
+        }
+
+        const summaryData =
+            await summaryResponse.json();
+
+        const extract =
+            summaryData?.extract;
+
+        if (!extract) {
+
+            return res.status(200).json({
+                reply:
+                    "I found information about " +
+                    title +
+                    ", but I couldn't retrieve the details."
+            });
+
+        }
+
+        // ==========================================
+        // KEEP RESPONSE SHORT
+        // ==========================================
+
+        let answer = extract;
+
+        if (answer.length > 900) {
+            answer = answer.substring(0, 900);
+
+            const lastSpace =
+                answer.lastIndexOf(" ");
+
+            if (lastSpace > 0) {
+                answer =
+                    answer.substring(0, lastSpace);
+            }
+
+            answer += "...";
+        }
 
         return res.status(200).json({
-            reply: result.output_text
+            reply: answer,
+            source: "Wikipedia"
         });
 
     } catch (error) {
-        console.error("JARVIS ERROR:", error);
+
+        console.error("JARVIS WEB ERROR:", error);
 
         return res.status(500).json({
-            error: "JARVIS encountered a system error."
+            error:
+                "JARVIS could not access web knowledge right now."
         });
     }
 }
-
