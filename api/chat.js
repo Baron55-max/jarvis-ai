@@ -1,5 +1,5 @@
 // ==========================================
-// JARVIS FREE WEB KNOWLEDGE API
+// JARVIS FREE WEB KNOWLEDGE API V2
 // ==========================================
 
 export default async function handler(req, res) {
@@ -12,21 +12,21 @@ export default async function handler(req, res) {
 
     try {
 
-        const { message } = req.body;
+        const { message } = req.body || {};
 
-        if (!message) {
+        if (!message || !message.trim()) {
             return res.status(400).json({
                 error: "No message provided"
             });
         }
 
-        // Clean the user's question
         const question = message
             .replace(/^jarvis[:,]?\s*/i, "")
             .trim();
 
+
         // ==========================================
-        // WIKIPEDIA SEARCH
+        // SEARCH WIKIPEDIA
         // ==========================================
 
         const searchURL =
@@ -35,6 +35,7 @@ export default async function handler(req, res) {
             "&list=search" +
             "&srsearch=" +
             encodeURIComponent(question) +
+            "&srlimit=3" +
             "&format=json" +
             "&origin=*";
 
@@ -42,7 +43,9 @@ export default async function handler(req, res) {
             await fetch(searchURL);
 
         if (!searchResponse.ok) {
-            throw new Error("Wikipedia search failed");
+            throw new Error(
+                "Wikipedia search failed"
+            );
         }
 
         const searchData =
@@ -51,82 +54,121 @@ export default async function handler(req, res) {
         const results =
             searchData?.query?.search || [];
 
+
+        // ==========================================
+        // NO RESULTS
+        // ==========================================
+
         if (results.length === 0) {
 
             return res.status(200).json({
                 reply:
                     "I couldn't find useful information about that. " +
-                    "Try asking me to search Google for it."
+                    "You can ask me to search Google instead."
             });
 
         }
 
+
         // ==========================================
-        // GET BEST RESULT
+        // GET BEST ARTICLE
         // ==========================================
 
-        const title = results[0].title;
+        const title =
+            results[0].title;
+
 
         const summaryURL =
             "https://en.wikipedia.org/api/rest_v1/page/summary/" +
             encodeURIComponent(title);
 
+
         const summaryResponse =
             await fetch(summaryURL);
 
+
         if (!summaryResponse.ok) {
-            throw new Error("Wikipedia summary failed");
+            throw new Error(
+                "Wikipedia summary failed"
+            );
         }
+
 
         const summaryData =
             await summaryResponse.json();
 
-        const extract =
+
+        let answer =
             summaryData?.extract;
 
-        if (!extract) {
 
-            return res.status(200).json({
-                reply:
-                    "I found information about " +
-                    title +
-                    ", but I couldn't retrieve the details."
-            });
+        // ==========================================
+        // FALLBACK
+        // ==========================================
 
+        if (!answer) {
+
+            answer =
+                "I found information about " +
+                title +
+                ", but I couldn't retrieve the full details.";
         }
 
+
         // ==========================================
-        // KEEP RESPONSE SHORT
+        // LIMIT RESPONSE LENGTH
         // ==========================================
 
-        let answer = extract;
+        if (answer.length > 1000) {
 
-        if (answer.length > 900) {
-            answer = answer.substring(0, 900);
+            answer =
+                answer.substring(0, 1000);
 
             const lastSpace =
                 answer.lastIndexOf(" ");
 
             if (lastSpace > 0) {
+
                 answer =
-                    answer.substring(0, lastSpace);
+                    answer.substring(
+                        0,
+                        lastSpace
+                    );
             }
 
             answer += "...";
         }
 
+
+        // ==========================================
+        // SEND RESPONSE
+        // ==========================================
+
         return res.status(200).json({
+
             reply: answer,
-            source: "Wikipedia"
+
+            source: "Wikipedia",
+
+            title: title
+
         });
 
     } catch (error) {
 
-        console.error("JARVIS WEB ERROR:", error);
+        console.error(
+            "JARVIS API ERROR:",
+            error
+        );
 
         return res.status(500).json({
+
             error:
-                "JARVIS could not access web knowledge right now."
+                "JARVIS could not access web knowledge right now.",
+
+            details:
+                error.message
+
         });
     }
 }
