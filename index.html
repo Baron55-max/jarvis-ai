@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JARVIS</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="app">
+
+        <!-- TOP BAR -->
+        <header class="top-bar">
+            <div class="brand">
+                <div class="brand-dot"></div>
+                <span>JARVIS</span>
+            </div>
+
+            <div class="status">
+                <span class="status-dot"></span>
+                ONLINE
+            </div>
+        </header>
+
+
+        <!-- MAIN AI CORE -->
+        <main class="main">
+
+            <div class="core-wrapper">
+
+                <div class="core-ring ring-1"></div>
+                <div class="core-ring ring-2"></div>
+                <div class="core-ring ring-3"></div>
+
+                <div class="ai-core">
+                    <div class="core-light"></div>
+                </div>
+
+            </div>
+
+            <h1>Good evening.</h1>
+
+            <p class="subtitle">
+                How can I assist you?
+            </p>
+
+
+            <!-- RESPONSE AREA -->
+            <div class="response-box">
+                <div class="response-label">JARVIS</div>
+
+                <div id="response">
+                    Systems initialized. Awaiting your command.
+                </div>
+            </div>
+
+
+            <!-- COMMAND AREA -->
+            <div class="command-area">
+
+                <input
+                    type="text"
+                    id="commandInput"
+                    placeholder="Ask JARVIS anything..."
+                    autocomplete="off"
+                >
+
+                <button id="micButton" aria-label="Voice input">
+                    🎙️
+                </button>
+
+                <button id="sendButton" aria-label="Send">
+                    ➤
+                </button>
+
+            </div>
+
+
+            <!-- QUICK COMMANDS -->
+            <div class="quick-commands">
+
+                <button onclick="quickCommand('What can you do?')">
+                    What can you do?
+                </button>
+
+                <button onclick="quickCommand('Tell me the time')">
+                    Time
+                </button>
+
+                <button onclick="quickCommand('Help me with coding')">
+                    Coding
+                </button>
+
+            </div>
+
+        </main>
+
+
+        <!-- FOOTER -->
+        <footer>
+            <span>JARVIS AI SYSTEM</span>
+            <span id="systemTime">--:--:--</span>
+        </footer>
+
+    </div>
+
+
+    <script src="script.js"></script>
+
+</body>
+</html>

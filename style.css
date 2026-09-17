@@ -1,0 +1,383 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --bg: #020508;
+    --panel: rgba(8, 15, 22, 0.75);
+    --cyan: #00d9ff;
+    --cyan-soft: rgba(0, 217, 255, 0.25);
+    --white: #eefaff;
+    --muted: #71818c;
+}
+
+body {
+    width: 100%;
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at center, #071722 0%, #020508 48%, #000 100%);
+    color: var(--white);
+    font-family: Arial, Helvetica, sans-serif;
+    overflow: hidden;
+}
+
+.app {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* TOP BAR */
+
+.top-bar {
+    height: 70px;
+    padding: 0 35px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(0, 217, 255, 0.12);
+    background: rgba(0, 5, 8, 0.5);
+    backdrop-filter: blur(12px);
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 5px;
+}
+
+.brand-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 15px var(--cyan);
+    animation: pulse 2s infinite;
+}
+
+.status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: #8da1ac;
+}
+
+.status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #00ff9d;
+    box-shadow: 0 0 10px #00ff9d;
+}
+
+/* MAIN */
+
+.main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 20px;
+    position: relative;
+}
+
+/* AI CORE */
+
+.core-wrapper {
+    width: 250px;
+    height: 250px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+
+.ai-core {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle, #dffaff 0%, #00d9ff 15%, #007eaa 45%, #03141c 70%);
+    box-shadow:
+        0 0 25px var(--cyan),
+        0 0 60px var(--cyan-soft),
+        inset 0 0 25px white;
+    position: relative;
+    z-index: 5;
+    animation: corePulse 2.5s ease-in-out infinite;
+}
+
+.core-light {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    top: 25px;
+    left: 25px;
+    filter: blur(4px);
+}
+
+/* RINGS */
+
+.core-ring {
+    position: absolute;
+    border: 1px solid var(--cyan);
+    border-radius: 50%;
+    opacity: 0.45;
+}
+
+.ring-1 {
+    width: 140px;
+    height: 140px;
+    animation: rotate 8s linear infinite;
+    border-style: dashed;
+}
+
+.ring-2 {
+    width: 190px;
+    height: 190px;
+    border-color: rgba(0, 217, 255, 0.35);
+    animation: rotateReverse 12s linear infinite;
+}
+
+.ring-3 {
+    width: 240px;
+    height: 240px;
+    border-color: rgba(0, 217, 255, 0.18);
+    border-style: dashed;
+    animation: rotate 18s linear infinite;
+}
+
+/* TEXT */
+
+h1 {
+    font-size: 32px;
+    font-weight: 400;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+}
+
+.subtitle {
+    color: var(--muted);
+    font-size: 15px;
+    margin-bottom: 25px;
+}
+
+/* RESPONSE */
+
+.response-box {
+    width: min(650px, 90vw);
+    min-height: 75px;
+    padding: 16px 20px;
+    border: 1px solid rgba(0, 217, 255, 0.15);
+    border-radius: 12px;
+    background: var(--panel);
+    backdrop-filter: blur(15px);
+    margin-bottom: 18px;
+}
+
+.response-label {
+    color: var(--cyan);
+    font-size: 9px;
+    letter-spacing: 3px;
+    margin-bottom: 8px;
+}
+
+#response {
+    color: #b7c9d2;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* COMMAND */
+
+.command-area {
+    width: min(650px, 90vw);
+    height: 58px;
+    display: flex;
+    align-items: center;
+    padding: 5px;
+    border: 1px solid rgba(0, 217, 255, 0.3);
+    border-radius: 14px;
+    background: rgba(3, 10, 15, 0.9);
+    box-shadow: 0 0 30px rgba(0, 217, 255, 0.06);
+}
+
+#commandInput {
+    flex: 1;
+    height: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: white;
+    padding: 0 15px;
+    font-size: 15px;
+}
+
+#commandInput::placeholder {
+    color: #52636d;
+}
+
+.command-area button {
+    width: 46px;
+    height: 46px;
+    border: none;
+    border-radius: 11px;
+    background: transparent;
+    color: var(--cyan);
+    font-size: 19px;
+    cursor: pointer;
+}
+
+.command-area button:hover {
+    background: rgba(0, 217, 255, 0.1);
+}
+
+#sendButton {
+    background: var(--cyan);
+    color: #001018;
+    font-weight: bold;
+}
+
+/* QUICK COMMANDS */
+
+.quick-commands {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.quick-commands button {
+    padding: 8px 13px;
+    border-radius: 20px;
+    border: 1px solid rgba(0, 217, 255, 0.15);
+    background: rgba(0, 217, 255, 0.03);
+    color: #718995;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.quick-commands button:hover {
+    color: var(--cyan);
+    border-color: rgba(0, 217, 255, 0.4);
+}
+
+/* FOOTER */
+
+footer {
+    height: 45px;
+    padding: 0 35px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #3f5059;
+    font-size: 9px;
+    letter-spacing: 2px;
+}
+
+/* ANIMATIONS */
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        box-shadow: 0 0 8px var(--cyan);
+    }
+
+    50% {
+        opacity: 0.4;
+        box-shadow: 0 0 20px var(--cyan);
+    }
+}
+
+@keyframes corePulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.08);
+    }
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes rotateReverse {
+    from {
+        transform: rotate(360deg);
+    }
+
+    to {
+        transform: rotate(0deg);
+    }
+}
+
+/* IPAD / PHONE */
+
+@media (max-width: 600px) {
+
+    .top-bar {
+        padding: 0 20px;
+    }
+
+    .main {
+        padding: 20px 15px;
+    }
+
+    .core-wrapper {
+        width: 190px;
+        height: 190px;
+        margin-bottom: 20px;
+    }
+
+    .ai-core {
+        width: 70px;
+        height: 70px;
+    }
+
+    .ring-1 {
+        width: 110px;
+        height: 110px;
+    }
+
+    .ring-2 {
+        width: 145px;
+        height: 145px;
+    }
+
+    .ring-3 {
+        width: 185px;
+        height: 185px;
+    }
+
+    h1 {
+        font-size: 25px;
+    }
+
+    .quick-commands {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    footer {
+        padding: 0 20px;
+    }
+}
