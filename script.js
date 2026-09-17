@@ -1,5 +1,5 @@
 // ==========================================
-// JARVIS V4.0 — SMART FREE VERSION
+// JARVIS V5.0 — VOICE + FREE WEB KNOWLEDGE
 // ==========================================
 
 const input = document.getElementById("commandInput");
@@ -16,7 +16,7 @@ let isListening = false;
 
 
 // ==========================================
-// SYSTEM TIME
+// TIME
 // ==========================================
 
 function updateTime() {
@@ -34,7 +34,7 @@ updateTime();
 
 
 // ==========================================
-// CORE STATES
+// CORE STATE
 // ==========================================
 
 function setCoreState(state) {
@@ -59,7 +59,7 @@ function setCoreState(state) {
 
 
 // ==========================================
-// SPEECH
+// SPEAK
 // ==========================================
 
 function speak(text) {
@@ -70,7 +70,8 @@ function speak(text) {
 
     speechSynthesis.cancel();
 
-    const utterance = new SpeechSynthesisUtterance(text);
+    const utterance =
+        new SpeechSynthesisUtterance(text);
 
     utterance.rate = 0.95;
     utterance.pitch = 0.9;
@@ -89,7 +90,7 @@ function speak(text) {
 
 
 // ==========================================
-// DISPLAY RESPONSE
+// REPLY
 // ==========================================
 
 function reply(text, shouldSpeak = true) {
@@ -124,21 +125,23 @@ function calculateExpression(text) {
         .replace(/x/g, "*")
         .trim();
 
-    // Only allow safe calculator characters
     if (!/^[0-9+\-*/().%\s]+$/.test(expression)) {
         return null;
     }
 
     try {
-        const result = Function(
-            `"use strict"; return (${expression})`
-        )();
+
+        const result =
+            Function(
+                `"use strict"; return (${expression})`
+            )();
 
         if (!Number.isFinite(result)) {
             return null;
         }
 
         return result;
+
     } catch {
         return null;
     }
@@ -162,7 +165,11 @@ function googleSearch(query) {
         return;
     }
 
-    reply("Searching Google for " + cleanQuery + "...");
+    reply(
+        "Searching Google for " +
+        cleanQuery +
+        "..."
+    );
 
     setTimeout(() => {
 
@@ -175,7 +182,7 @@ function googleSearch(query) {
 
 
 // ==========================================
-// YOUTUBE
+// OPEN WEBSITES
 // ==========================================
 
 function openYouTube() {
@@ -183,35 +190,30 @@ function openYouTube() {
     reply("Opening YouTube...");
 
     setTimeout(() => {
-        window.location.href = "https://www.youtube.com";
+        window.location.href =
+            "https://www.youtube.com";
     }, 1200);
 }
 
-
-// ==========================================
-// GOOGLE
-// ==========================================
 
 function openGoogle() {
 
     reply("Opening Google...");
 
     setTimeout(() => {
-        window.location.href = "https://www.google.com";
+        window.location.href =
+            "https://www.google.com";
     }, 1200);
 }
 
-
-// ==========================================
-// GITHUB
-// ==========================================
 
 function openGitHub() {
 
     reply("Opening GitHub...");
 
     setTimeout(() => {
-        window.location.href = "https://github.com";
+        window.location.href =
+            "https://github.com";
     }, 1200);
 }
 
@@ -224,12 +226,17 @@ function tellTime() {
 
     const now = new Date();
 
-    const time = now.toLocaleTimeString([], {
-        hour: "numeric",
-        minute: "2-digit"
-    });
+    const time =
+        now.toLocaleTimeString([], {
+            hour: "numeric",
+            minute: "2-digit"
+        });
 
-    reply("The current time is " + time + ".");
+    reply(
+        "The current time is " +
+        time +
+        "."
+    );
 }
 
 
@@ -241,27 +248,30 @@ function tellDate() {
 
     const now = new Date();
 
-    const date = now.toLocaleDateString([], {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-        year: "numeric"
-    });
+    const date =
+        now.toLocaleDateString([], {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+            year: "numeric"
+        });
 
-    reply("Today is " + date + ".");
+    reply(
+        "Today is " +
+        date +
+        "."
+    );
 }
 
 
 // ==========================================
-// JARVIS IDENTITY
+// IDENTITY
 // ==========================================
 
 function identity() {
 
     reply(
-        "I am JARVIS, your personal AI assistant. " +
-        "I can respond to commands, control this interface, " +
-        "search the web, calculate numbers, and help you with everyday tasks."
+        "I am JARVIS, your personal AI assistant."
     );
 }
 
@@ -273,122 +283,123 @@ function identity() {
 function capabilities() {
 
     reply(
-        "I can search Google, open YouTube and GitHub, " +
-        "tell you the time and date, perform calculations, " +
-        "respond to common questions, and interact with you using voice."
+        "I can understand voice commands, " +
+        "search the web, open websites, " +
+        "calculate numbers, tell you the time, " +
+        "and answer questions using web knowledge."
     );
 }
 
 
 // ==========================================
-// CODING HELP
+// CODING
 // ==========================================
 
 function codingHelp() {
 
     reply(
-        "I can help with HTML, CSS, JavaScript, Python, " +
-        "C and other programming concepts. " +
-        "Tell me what you want to build and I'll guide you."
+        "I can help you with HTML, CSS, JavaScript, " +
+        "Python, C and other programming languages."
     );
 }
 
 
 // ==========================================
-// GREETINGS
+// GREETING
 // ==========================================
 
 function greeting() {
 
     const greetings = [
         "Good to hear from you. How can I assist?",
-        "Hello. Systems are ready. What can I do for you?",
+        "Hello. Systems are ready.",
         "At your service. What's the command?",
         "I'm listening. What would you like me to do?"
     ];
 
     const random =
-        greetings[Math.floor(Math.random() * greetings.length)];
+        greetings[
+            Math.floor(
+                Math.random() *
+                greetings.length
+            )
+        ];
 
     reply(random);
 }
 
 
 // ==========================================
-// COMMON KNOWLEDGE
+// FREE WEB AI
 // ==========================================
 
-function answerCommonQuestion(text) {
+async function askWebAI(question) {
 
-    const q = text.toLowerCase();
+    setCoreState("thinking");
 
-    if (
-        q.includes("what is ai") ||
-        q.includes("what is artificial intelligence")
-    ) {
-        reply(
-            "Artificial intelligence is technology that allows computers " +
-            "to perform tasks that normally require human intelligence, " +
-            "such as understanding language, recognizing patterns and solving problems."
+    response.textContent =
+        "Searching my web knowledge...";
+
+    try {
+
+        const result =
+            await fetch("/api/chat", {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body: JSON.stringify({
+                    message: question
+                })
+
+            });
+
+        const data =
+            await result.json();
+
+        if (!result.ok) {
+            throw new Error(
+                data.error ||
+                "Request failed"
+            );
+        }
+
+        if (!data.reply) {
+            throw new Error(
+                "No response received"
+            );
+        }
+
+        reply(data.reply);
+
+    } catch (error) {
+
+        console.error(
+            "JARVIS WEB ERROR:",
+            error
         );
-        return true;
-    }
 
-    if (
-        q.includes("what is ram") ||
-        q.includes("what is random access memory")
-    ) {
         reply(
-            "RAM is temporary computer memory used to hold data and programs " +
-            "that are currently being used. More RAM generally allows a device " +
-            "to handle more tasks at the same time."
+            "I couldn't access my web knowledge right now. " +
+            "Try asking me to search Google for it."
         );
-        return true;
     }
-
-    if (
-        q.includes("what is rom") ||
-        q.includes("what is read only memory")
-    ) {
-        reply(
-            "ROM is non-volatile memory used to store information that normally " +
-            "does not disappear when the device is powered off."
-        );
-        return true;
-    }
-
-    if (
-        q.includes("what is a black hole") ||
-        q.includes("what are black holes")
-    ) {
-        reply(
-            "A black hole is a region of space where gravity is so strong " +
-            "that nothing, including light, can escape once it passes the event horizon."
-        );
-        return true;
-    }
-
-    if (
-        q.includes("who are you") ||
-        q.includes("who is jarvis")
-    ) {
-        identity();
-        return true;
-    }
-
-    return false;
 }
 
 
 // ==========================================
-// SMART LOCAL RESPONSE
+// SMART COMMAND SYSTEM
 // ==========================================
 
 function smartResponse(text) {
 
-    const q = text.toLowerCase().trim();
+    const q =
+        text.toLowerCase().trim();
 
-    // Empty command
     if (!q) {
         reply("I'm listening.");
         return;
@@ -396,6 +407,7 @@ function smartResponse(text) {
 
 
     // Greetings
+
     if (
         q === "hello" ||
         q === "hi" ||
@@ -403,127 +415,146 @@ function smartResponse(text) {
         q.includes("hello jarvis") ||
         q.includes("hey jarvis")
     ) {
+
         greeting();
         return;
     }
 
 
     // Identity
+
     if (
         q.includes("who are you") ||
         q.includes("what are you")
     ) {
+
         identity();
         return;
     }
 
 
     // Capabilities
+
     if (
         q.includes("what can you do") ||
-        q.includes("your abilities") ||
-        q.includes("help me")
+        q.includes("your abilities")
     ) {
+
         capabilities();
         return;
     }
 
 
     // Time
+
     if (
         q.includes("what time is it") ||
         q.includes("tell me the time") ||
         q === "time"
     ) {
+
         tellTime();
         return;
     }
 
 
     // Date
+
     if (
         q.includes("what is today's date") ||
         q.includes("what day is it") ||
         q.includes("today's date") ||
         q === "date"
     ) {
+
         tellDate();
         return;
     }
 
 
     // Google
+
     if (
         q === "open google" ||
         q === "go to google"
     ) {
+
         openGoogle();
         return;
     }
 
 
     // YouTube
+
     if (
         q === "open youtube" ||
         q === "go to youtube"
     ) {
+
         openYouTube();
         return;
     }
 
 
     // GitHub
+
     if (
         q === "open github" ||
         q === "go to github"
     ) {
+
         openGitHub();
         return;
     }
 
 
     // Google search
+
     if (
         q.startsWith("search google for") ||
         q.startsWith("google search for") ||
         q.startsWith("search for")
     ) {
+
         googleSearch(text);
         return;
     }
 
 
     // Coding
+
     if (
         q.includes("help me with coding") ||
-        q.includes("help me code") ||
-        q.includes("write code")
+        q.includes("help me code")
     ) {
+
         codingHelp();
         return;
     }
 
 
     // Calculator
-    const calculation = calculateExpression(text);
+
+    const calculation =
+        calculateExpression(text);
 
     if (calculation !== null) {
-        reply("The answer is " + calculation + ".");
+
+        reply(
+            "The answer is " +
+            calculation +
+            "."
+        );
+
         return;
     }
 
 
-    // Common knowledge
-    if (answerCommonQuestion(text)) {
-        return;
-    }
+    // ======================================
+    // EVERYTHING ELSE → WEB KNOWLEDGE
+    // ======================================
 
-
-    // Unknown command
-    reply(
-        "I understand your command, but my free local knowledge is limited. " +
-        "Try asking me to search Google for it."
-    );
+    askWebAI(text);
 }
 
 
@@ -533,7 +564,8 @@ function smartResponse(text) {
 
 function sendCommand() {
 
-    const text = input.value.trim();
+    const text =
+        input.value.trim();
 
     if (!text) {
         return;
@@ -541,11 +573,7 @@ function sendCommand() {
 
     input.value = "";
 
-    setCoreState("thinking");
-
-    setTimeout(() => {
-        smartResponse(text);
-    }, 300);
+    smartResponse(text);
 }
 
 
@@ -553,24 +581,30 @@ function sendCommand() {
 // SEND BUTTON
 // ==========================================
 
-sendButton.addEventListener("click", sendCommand);
+sendButton.addEventListener(
+    "click",
+    sendCommand
+);
 
 
 // ==========================================
 // ENTER KEY
 // ==========================================
 
-input.addEventListener("keydown", (event) => {
+input.addEventListener(
+    "keydown",
+    (event) => {
 
-    if (event.key === "Enter") {
-        sendCommand();
+        if (event.key === "Enter") {
+            sendCommand();
+        }
+
     }
-
-});
+);
 
 
 // ==========================================
-// QUICK COMMANDS
+// QUICK COMMAND
 // ==========================================
 
 function quickCommand(command) {
@@ -591,7 +625,8 @@ const SpeechRecognition =
 
 if (SpeechRecognition) {
 
-    recognition = new SpeechRecognition();
+    recognition =
+        new SpeechRecognition();
 
     recognition.continuous = false;
     recognition.interimResults = false;
@@ -616,11 +651,9 @@ if (SpeechRecognition) {
 
         input.value = transcript;
 
-        setCoreState("thinking");
+        isListening = false;
 
-        setTimeout(() => {
-            smartResponse(transcript);
-        }, 300);
+        smartResponse(transcript);
     };
 
 
@@ -630,16 +663,22 @@ if (SpeechRecognition) {
 
         setCoreState(null);
 
+        console.log(
+            "Voice error:",
+            event.error
+        );
+
         if (event.error === "not-allowed") {
+
             reply(
                 "Microphone permission is blocked. " +
-                "Please allow microphone access for JARVIS.",
-                true
+                "Please allow microphone access for JARVIS."
             );
+
         } else {
+
             reply(
-                "I couldn't understand that. Please try again.",
-                true
+                "I couldn't understand that. Please try again."
             );
         }
     };
@@ -653,41 +692,50 @@ if (SpeechRecognition) {
             !core.classList.contains("speaking") &&
             !core.classList.contains("thinking")
         ) {
+
             setCoreState(null);
         }
     };
 
 
-    micButton.addEventListener("click", () => {
+    micButton.addEventListener(
+        "click",
+        () => {
 
-        if (isListening) {
-            recognition.stop();
-            return;
+            if (isListening) {
+
+                recognition.stop();
+                return;
+            }
+
+            try {
+
+                recognition.start();
+
+            } catch (error) {
+
+                console.log(error);
+
+            }
+
         }
-
-        try {
-            recognition.start();
-        } catch (error) {
-            console.log(error);
-        }
-
-    });
+    );
 
 } else {
 
-    micButton.addEventListener("click", () => {
+    micButton.addEventListener(
+        "click",
+        () => {
 
-        reply(
-            "Voice recognition is not supported by this browser."
-        );
+            reply(
+                "Voice recognition is not supported by this browser."
+            );
 
-    });
-
+        }
+    );
 }
 
 
-// ==========================================
-// INITIAL MESSAGE
-// ==========================================
-
-console.log("JARVIS V4.0 ONLINE");
+console.log(
+    "JARVIS V5.0 ONLINE"
+);
