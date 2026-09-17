@@ -1,5 +1,5 @@
 // ==========================================
-// JARVIS FREE WEB KNOWLEDGE API V3
+// JARVIS V6.0 — WEB KNOWLEDGE + MEMORY API
 // ==========================================
 
 export default async function handler(req, res) {
@@ -12,21 +12,28 @@ export default async function handler(req, res) {
 
     try {
 
-        const { message } = req.body || {};
+        const body = req.body || {};
 
-        if (!message || !message.trim()) {
+        const message =
+            typeof body.message === "string"
+                ? body.message.trim()
+                : "";
+
+        const conversation =
+            Array.isArray(body.conversation)
+                ? body.conversation
+                : [];
+
+
+        if (!message) {
             return res.status(400).json({
                 error: "No message provided"
             });
         }
 
-        const question = message
-            .replace(/^jarvis[:,]?\s*/i, "")
-            .trim();
-
 
         // ==========================================
-        // WIKIPEDIA SEARCH
+        // SEARCH QUERY
         // ==========================================
 
         const searchURL =
@@ -34,11 +41,12 @@ export default async function handler(req, res) {
             "?action=query" +
             "&list=search" +
             "&srsearch=" +
-            encodeURIComponent(question) +
+            encodeURIComponent(message) +
             "&srlimit=5" +
             "&srprop=snippet" +
             "&format=json" +
             "&origin=*";
+
 
         const searchResponse =
             await fetch(searchURL, {
@@ -71,16 +79,18 @@ export default async function handler(req, res) {
         if (results.length === 0) {
 
             return res.status(200).json({
+
                 reply:
-                    "I couldn't find information about that on the web. " +
-                    "Try asking me to search Google."
+                    "I couldn't find useful information about that on the web. " +
+                    "Try asking me to search Google for it."
+
             });
 
         }
 
 
         // ==========================================
-        // BUILD ANSWER FROM SEARCH RESULTS
+        // BUILD WEB ANSWER
         // ==========================================
 
         let answer = "";
@@ -90,61 +100,70 @@ export default async function handler(req, res) {
             results.slice(0, 3);
 
 
-        usefulResults.forEach((item, index) => {
+        usefulResults.forEach(
+            (item) => {
 
-            let snippet =
-                item.snippet || "";
-
-
-            // Remove HTML tags from Wikipedia snippets
-            snippet =
-                snippet.replace(
-                    /<[^>]*>/g,
-                    ""
-                );
+                let snippet =
+                    item.snippet || "";
 
 
-            // Decode common HTML entities
-            snippet =
-                snippet
-                    .replace(/&quot;/g, '"')
-                    .replace(/&#39;/g, "'")
-                    .replace(/&amp;/g, "&")
-                    .replace(/&lt;/g, "<")
-                    .replace(/&gt;/g, ">");
+                // Remove HTML tags
+
+                snippet =
+                    snippet.replace(
+                        /<[^>]*>/g,
+                        ""
+                    );
 
 
-            if (snippet) {
+                // Decode HTML characters
 
-                if (index === 0) {
+                snippet =
+                    snippet
+                        .replace(
+                            /&quot;/g,
+                            '"'
+                        )
+                        .replace(
+                            /&#39;/g,
+                            "'"
+                        )
+                        .replace(
+                            /&amp;/g,
+                            "&"
+                        )
+                        .replace(
+                            /&lt;/g,
+                            "<"
+                        )
+                        .replace(
+                            /&gt;/g,
+                            ">"
+                        );
 
-                    answer +=
-                        snippet + " ";
 
-                } else {
+                if (snippet) {
 
                     answer +=
                         snippet + " ";
 
                 }
+
             }
+        );
 
-        });
-
-
-        // ==========================================
-        // CLEAN ANSWER
-        // ==========================================
 
         answer =
-            answer.replace(
-                /\s+/g,
-                " "
-            ).trim();
+            answer
+                .replace(
+                    /\s+/g,
+                    " "
+                )
+                .trim();
 
 
         // ==========================================
-        // FALLBACK TO ARTICLE TITLE
+        // FALLBACK
         // ==========================================
 
         if (!answer) {
@@ -158,16 +177,73 @@ export default async function handler(req, res) {
 
 
         // ==========================================
-        // KEEP ANSWER SHORT
+        // MEMORY CONTEXT
+        // ==========================================
+        //
+        // The browser sends recent conversation
+        // history. We use it to improve follow-up
+        // questions when possible.
+        //
+
+        const recentConversation =
+            conversation
+                .slice(-6)
+                .filter(item =>
+                    item &&
+                    typeof item.content === "string"
+                );
+
+
+        if (
+            recentConversation.length > 0 &&
+            message.length < 40
+        ) {
+
+            const previousUserMessages =
+                recentConversation
+                    .filter(
+                        item =>
+                            item.role === "user"
+                    )
+                    .map(
+                        item =>
+                            item.content
+                    );
+
+
+            if (
+                previousUserMessages.length > 0
+            ) {
+
+                answer =
+                    answer +
+                    " This answer relates to your recent question about " +
+                    previousUserMessages[
+                        previousUserMessages.length - 1
+                    ] +
+                    ".";
+
+            }
+
+        }
+
+
+        // ==========================================
+        // LIMIT ANSWER
         // ==========================================
 
-        if (answer.length > 1000) {
+        if (answer.length > 1100) {
 
             answer =
-                answer.substring(0, 1000);
+                answer.substring(
+                    0,
+                    1100
+                );
+
 
             const lastSpace =
                 answer.lastIndexOf(" ");
+
 
             if (lastSpace > 0) {
 
@@ -176,14 +252,17 @@ export default async function handler(req, res) {
                         0,
                         lastSpace
                     );
+
             }
 
+
             answer += "...";
+
         }
 
 
         // ==========================================
-        // SEND ANSWER
+        // RESPONSE
         // ==========================================
 
         return res.status(200).json({
@@ -192,7 +271,10 @@ export default async function handler(req, res) {
 
             source: "Wikipedia",
 
-            title: results[0].title
+            title: results[0].title,
+
+            memoryUsed:
+                recentConversation.length > 0
 
         });
 
@@ -216,4 +298,5 @@ export default async function handler(req, res) {
         });
 
     }
+
 }
