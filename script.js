@@ -1,5 +1,5 @@
 // ================================
-// JARVIS V3.1 - COMMAND SYSTEM
+// JARVIS V3.2 - COMMAND SYSTEM
 // ================================
 
 const input = document.getElementById("commandInput");
@@ -27,6 +27,7 @@ function setCoreState(state) {
 // ================================
 
 function updateTime() {
+
     const now = new Date();
 
     systemTime.textContent = now.toLocaleTimeString([], {
@@ -69,6 +70,54 @@ function speak(text) {
 
 
 // ================================
+// CALCULATOR
+// ================================
+
+function calculateExpression(text) {
+
+    let expression = text
+        .replace(/what is/gi, "")
+        .replace(/calculate/gi, "")
+        .replace(/compute/gi, "")
+        .replace(/how much is/gi, "")
+        .replace(/what's/gi, "")
+        .replace(/=/g, "")
+        .trim();
+
+    expression = expression
+        .replace(/plus/gi, "+")
+        .replace(/minus/gi, "-")
+        .replace(/times/gi, "*")
+        .replace(/multiplied by/gi, "*")
+        .replace(/divided by/gi, "/")
+        .replace(/divide by/gi, "/")
+        .replace(/percent of/gi, "*0.01*");
+
+    // Allow only numbers and basic math symbols
+    if (!/^[0-9+\-*/().%\s]+$/.test(expression)) {
+        return null;
+    }
+
+    try {
+
+        const result = Function(
+            `"use strict"; return (${expression})`
+        )();
+
+        if (!Number.isFinite(result)) {
+            return null;
+        }
+
+        return result;
+
+    } catch (error) {
+
+        return null;
+    }
+}
+
+
+// ================================
 // COMMAND SYSTEM
 // ================================
 
@@ -77,8 +126,14 @@ function runCommand(command) {
     const text = command.toLowerCase().trim();
 
 
+    // ================================
     // TIME
-    if (text.includes("what time") || text === "time") {
+    // ================================
+
+    if (
+        text.includes("what time") ||
+        text === "time"
+    ) {
 
         const now = new Date();
 
@@ -96,7 +151,10 @@ function runCommand(command) {
     }
 
 
+    // ================================
     // DATE
+    // ================================
+
     if (
         text.includes("today's date") ||
         text.includes("what date") ||
@@ -121,7 +179,36 @@ function runCommand(command) {
     }
 
 
-    // YOUTUBE
+    // ================================
+    // CALCULATOR
+    // ================================
+
+    if (
+        text.includes("calculate") ||
+        text.includes("what is") ||
+        text.includes("what's") ||
+        text.includes("how much is") ||
+        text.includes("compute")
+    ) {
+
+        const result = calculateExpression(text);
+
+        if (result !== null) {
+
+            const reply = `The answer is ${result}.`;
+
+            response.textContent = reply;
+            speak(reply);
+
+            return true;
+        }
+    }
+
+
+    // ================================
+    // OPEN YOUTUBE
+    // ================================
+
     if (text.includes("open youtube")) {
 
         const reply = "Opening YouTube.";
@@ -130,14 +217,20 @@ function runCommand(command) {
         speak(reply);
 
         setTimeout(() => {
-            window.open("https://www.youtube.com", "_blank");
+            window.open(
+                "https://www.youtube.com",
+                "_blank"
+            );
         }, 700);
 
         return true;
     }
 
 
-    // GOOGLE
+    // ================================
+    // OPEN GOOGLE
+    // ================================
+
     if (text.includes("open google")) {
 
         const reply = "Opening Google.";
@@ -146,14 +239,20 @@ function runCommand(command) {
         speak(reply);
 
         setTimeout(() => {
-            window.open("https://www.google.com", "_blank");
+            window.open(
+                "https://www.google.com",
+                "_blank"
+            );
         }, 700);
 
         return true;
     }
 
 
-    // GITHUB
+    // ================================
+    // OPEN GITHUB
+    // ================================
+
     if (text.includes("open github")) {
 
         const reply = "Opening GitHub.";
@@ -162,14 +261,20 @@ function runCommand(command) {
         speak(reply);
 
         setTimeout(() => {
-            window.open("https://github.com", "_blank");
+            window.open(
+                "https://github.com",
+                "_blank"
+            );
         }, 700);
 
         return true;
     }
 
 
+    // ================================
     // GREETING
+    // ================================
+
     if (
         text === "hello" ||
         text === "hi" ||
@@ -221,20 +326,26 @@ function sendCommand() {
 // SEND BUTTON
 // ================================
 
-sendButton.addEventListener("click", sendCommand);
+sendButton.addEventListener(
+    "click",
+    sendCommand
+);
 
 
 // ================================
 // ENTER KEY
 // ================================
 
-input.addEventListener("keydown", function(event) {
+input.addEventListener(
+    "keydown",
+    function(event) {
 
-    if (event.key === "Enter") {
-        sendCommand();
+        if (event.key === "Enter") {
+            sendCommand();
+        }
+
     }
-
-});
+);
 
 
 // ================================
@@ -246,7 +357,6 @@ function quickCommand(command) {
     input.value = command;
 
     sendCommand();
-
 }
 
 
@@ -267,19 +377,26 @@ if (SpeechRecognition) {
     recognition.lang = "en-US";
 
 
-    micButton.addEventListener("click", function() {
+    micButton.addEventListener(
+        "click",
+        function() {
 
-        response.textContent = "Listening...";
+            response.textContent = "Listening...";
 
-        setCoreState("listening");
+            setCoreState("listening");
 
-        try {
-            recognition.start();
-        } catch (error) {
-            console.log(error);
+            try {
+
+                recognition.start();
+
+            } catch (error) {
+
+                console.log(error);
+
+            }
+
         }
-
-    });
+    );
 
 
     recognition.onresult = function(event) {
@@ -290,7 +407,6 @@ if (SpeechRecognition) {
         input.value = transcript;
 
         sendCommand();
-
     };
 
 
@@ -300,18 +416,19 @@ if (SpeechRecognition) {
             "I couldn't hear you. Please try again.";
 
         setCoreState("idle");
-
     };
 
 } else {
 
-    micButton.addEventListener("click", function() {
+    micButton.addEventListener(
+        "click",
+        function() {
 
-        response.textContent =
-            "Voice recognition isn't supported here.";
+            response.textContent =
+                "Voice recognition isn't supported here.";
 
-        setCoreState("idle");
+            setCoreState("idle");
 
-    });
-
+        }
+    );
 }
