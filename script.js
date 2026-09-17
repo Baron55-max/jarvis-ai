@@ -1,5 +1,5 @@
 // ==========================================
-// JARVIS V5.1 — VOICE + FREE WEB KNOWLEDGE
+// JARVIS V6.0 — CONVERSATION MEMORY
 // ==========================================
 
 const input = document.getElementById("commandInput");
@@ -16,20 +16,111 @@ let isListening = false;
 
 
 // ==========================================
+// CONVERSATION MEMORY
+// ==========================================
+
+let conversation = [];
+
+try {
+    conversation =
+        JSON.parse(
+            localStorage.getItem(
+                "jarvisConversation"
+            )
+        ) || [];
+} catch {
+    conversation = [];
+}
+
+
+// Keep memory manageable
+function saveConversation() {
+
+    if (conversation.length > 20) {
+
+        conversation =
+            conversation.slice(-20);
+
+    }
+
+    try {
+
+        localStorage.setItem(
+            "jarvisConversation",
+            JSON.stringify(conversation)
+        );
+
+    } catch (error) {
+
+        console.log(
+            "Memory save error:",
+            error
+        );
+
+    }
+}
+
+
+function rememberUser(text) {
+
+    conversation.push({
+        role: "user",
+        content: text
+    });
+
+    saveConversation();
+}
+
+
+function rememberJarvis(text) {
+
+    conversation.push({
+        role: "assistant",
+        content: text
+    });
+
+    saveConversation();
+}
+
+
+// ==========================================
+// CLEAR MEMORY
+// ==========================================
+
+function clearMemory() {
+
+    conversation = [];
+
+    try {
+        localStorage.removeItem(
+            "jarvisConversation"
+        );
+    } catch {}
+
+    reply(
+        "Conversation memory has been cleared."
+    );
+}
+
+
+// ==========================================
 // TIME
 // ==========================================
 
 function updateTime() {
+
     const now = new Date();
 
-    systemTime.textContent = now.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit"
-    });
+    systemTime.textContent =
+        now.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit"
+        });
 }
 
 setInterval(updateTime, 1000);
+
 updateTime();
 
 
@@ -52,14 +143,17 @@ function setCoreState(state) {
     );
 
     if (state) {
+
         core.classList.add(state);
+
         coreWrapper.classList.add(state);
+
     }
 }
 
 
 // ==========================================
-// UNLOCK SPEECH
+// SPEECH UNLOCK
 // ==========================================
 
 function unlockSpeech() {
@@ -70,13 +164,13 @@ function unlockSpeech() {
 
     try {
 
-        const silentUtterance =
+        const silent =
             new SpeechSynthesisUtterance("");
 
-        silentUtterance.volume = 0;
-        silentUtterance.rate = 10;
+        silent.volume = 0;
+        silent.rate = 10;
 
-        speechSynthesis.speak(silentUtterance);
+        speechSynthesis.speak(silent);
         speechSynthesis.cancel();
 
     } catch (error) {
@@ -85,6 +179,7 @@ function unlockSpeech() {
             "Speech unlock error:",
             error
         );
+
     }
 }
 
@@ -115,24 +210,26 @@ function speak(text) {
         utterance.volume = 1;
 
         utterance.onstart = () => {
+
             setCoreState("speaking");
+
         };
 
         utterance.onend = () => {
-            setCoreState(null);
-        };
-
-        utterance.onerror = (event) => {
-
-            console.log(
-                "Speech error:",
-                event
-            );
 
             setCoreState(null);
+
         };
 
-        speechSynthesis.speak(utterance);
+        utterance.onerror = () => {
+
+            setCoreState(null);
+
+        };
+
+        speechSynthesis.speak(
+            utterance
+        );
 
         setTimeout(() => {
 
@@ -153,9 +250,10 @@ function speak(text) {
     } catch (error) {
 
         console.log(
-            "Speak error:",
+            "Speech error:",
             error
         );
+
     }
 }
 
@@ -164,12 +262,24 @@ function speak(text) {
 // REPLY
 // ==========================================
 
-function reply(text, shouldSpeak = true) {
+function reply(
+    text,
+    shouldSpeak = true,
+    remember = true
+) {
 
     response.textContent = text;
 
+    if (remember) {
+
+        rememberJarvis(text);
+
+    }
+
     if (shouldSpeak) {
+
         speak(text);
+
     }
 }
 
@@ -180,24 +290,31 @@ function reply(text, shouldSpeak = true) {
 
 function calculateExpression(text) {
 
-    let expression = text
-        .toLowerCase()
-        .replace(/what is/g, "")
-        .replace(/calculate/g, "")
-        .replace(/equals/g, "")
-        .replace(/equal to/g, "")
-        .replace(/plus/g, "+")
-        .replace(/minus/g, "-")
-        .replace(/times/g, "*")
-        .replace(/multiplied by/g, "*")
-        .replace(/divided by/g, "/")
-        .replace(/over/g, "/")
-        .replace(/into/g, "*")
-        .replace(/x/g, "*")
-        .trim();
+    let expression =
+        text
+            .toLowerCase()
+            .replace(/what is/g, "")
+            .replace(/calculate/g, "")
+            .replace(/equals/g, "")
+            .replace(/equal to/g, "")
+            .replace(/plus/g, "+")
+            .replace(/minus/g, "-")
+            .replace(/times/g, "*")
+            .replace(/multiplied by/g, "*")
+            .replace(/divided by/g, "/")
+            .replace(/over/g, "/")
+            .replace(/into/g, "*")
+            .replace(/x/g, "*")
+            .trim();
 
-    if (!/^[0-9+\-*/().%\s]+$/.test(expression)) {
+    if (
+        !/^[0-9+\-*/().%\s]+$/.test(
+            expression
+        )
+    ) {
+
         return null;
+
     }
 
     try {
@@ -208,7 +325,9 @@ function calculateExpression(text) {
             )();
 
         if (!Number.isFinite(result)) {
+
             return null;
+
         }
 
         return result;
@@ -216,6 +335,7 @@ function calculateExpression(text) {
     } catch {
 
         return null;
+
     }
 }
 
@@ -226,11 +346,21 @@ function calculateExpression(text) {
 
 function googleSearch(query) {
 
-    const cleanQuery = query
-        .replace(/^search google for/i, "")
-        .replace(/^google search for/i, "")
-        .replace(/^search for/i, "")
-        .trim();
+    const cleanQuery =
+        query
+            .replace(
+                /^search google for/i,
+                ""
+            )
+            .replace(
+                /^google search for/i,
+                ""
+            )
+            .replace(
+                /^search for/i,
+                ""
+            )
+            .trim();
 
     if (!cleanQuery) {
 
@@ -239,6 +369,7 @@ function googleSearch(query) {
         );
 
         return;
+
     }
 
     reply(
@@ -251,14 +382,16 @@ function googleSearch(query) {
 
         window.location.href =
             "https://www.google.com/search?q=" +
-            encodeURIComponent(cleanQuery);
+            encodeURIComponent(
+                cleanQuery
+            );
 
     }, 1200);
 }
 
 
 // ==========================================
-// OPEN YOUTUBE
+// OPEN WEBSITES
 // ==========================================
 
 function openYouTube() {
@@ -274,10 +407,6 @@ function openYouTube() {
 }
 
 
-// ==========================================
-// OPEN GOOGLE
-// ==========================================
-
 function openGoogle() {
 
     reply("Opening Google...");
@@ -290,10 +419,6 @@ function openGoogle() {
     }, 1200);
 }
 
-
-// ==========================================
-// OPEN GITHUB
-// ==========================================
 
 function openGitHub() {
 
@@ -309,7 +434,7 @@ function openGitHub() {
 
 
 // ==========================================
-// TELL TIME
+// TIME
 // ==========================================
 
 function tellTime() {
@@ -331,7 +456,7 @@ function tellTime() {
 
 
 // ==========================================
-// TELL DATE
+// DATE
 // ==========================================
 
 function tellDate() {
@@ -374,9 +499,9 @@ function capabilities() {
 
     reply(
         "I can understand voice commands, " +
-        "search the web, open websites, " +
-        "calculate numbers, tell you the time, " +
-        "and answer questions using web knowledge."
+        "speak my responses, search web knowledge, " +
+        "remember recent conversations, calculate numbers, " +
+        "tell you the time, and open websites."
     );
 }
 
@@ -401,16 +526,22 @@ function codingHelp() {
 function greeting() {
 
     const greetings = [
+
         "Good to hear from you. How can I assist?",
+
         "Hello. Systems are ready.",
+
         "At your service. What's the command?",
+
         "I'm listening. What would you like me to do?"
+
     ];
 
     const random =
         greetings[
             Math.floor(
-                Math.random() * greetings.length
+                Math.random() *
+                greetings.length
             )
         ];
 
@@ -419,7 +550,7 @@ function greeting() {
 
 
 // ==========================================
-// FREE WEB AI
+// WEB KNOWLEDGE
 // ==========================================
 
 async function askWebAI(question) {
@@ -432,22 +563,33 @@ async function askWebAI(question) {
     try {
 
         const result =
-            await fetch("/api/chat", {
+            await fetch(
+                "/api/chat",
+                {
 
-                method: "POST",
+                    method: "POST",
 
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
 
-                body: JSON.stringify({
-                    message: question
-                })
+                    body: JSON.stringify({
 
-            });
+                        message: question,
+
+                        conversation:
+                            conversation.slice(-10)
+
+                    })
+
+                }
+            );
+
 
         const data =
             await result.json();
+
 
         if (!result.ok) {
 
@@ -455,22 +597,28 @@ async function askWebAI(question) {
                 data.error ||
                 "Request failed"
             );
+
         }
+
 
         if (!data.reply) {
 
             throw new Error(
                 "No response received"
             );
+
         }
+
 
         setCoreState(null);
 
-        // Speak the web answer
+
         reply(
             data.reply,
+            true,
             true
         );
+
 
     } catch (error) {
 
@@ -485,6 +633,7 @@ async function askWebAI(question) {
             "I couldn't access my web knowledge right now. " +
             "Try asking me to search Google for it."
         );
+
     }
 }
 
@@ -498,11 +647,28 @@ function smartResponse(text) {
     const q =
         text.toLowerCase().trim();
 
+
     if (!q) {
 
         reply("I'm listening.");
 
         return;
+
+    }
+
+
+    // CLEAR MEMORY
+
+    if (
+        q === "clear memory" ||
+        q === "forget everything" ||
+        q === "clear conversation"
+    ) {
+
+        clearMemory();
+
+        return;
+
     }
 
 
@@ -519,6 +685,7 @@ function smartResponse(text) {
         greeting();
 
         return;
+
     }
 
 
@@ -532,6 +699,7 @@ function smartResponse(text) {
         identity();
 
         return;
+
     }
 
 
@@ -545,6 +713,7 @@ function smartResponse(text) {
         capabilities();
 
         return;
+
     }
 
 
@@ -559,6 +728,7 @@ function smartResponse(text) {
         tellTime();
 
         return;
+
     }
 
 
@@ -574,6 +744,7 @@ function smartResponse(text) {
         tellDate();
 
         return;
+
     }
 
 
@@ -587,6 +758,7 @@ function smartResponse(text) {
         openGoogle();
 
         return;
+
     }
 
 
@@ -600,6 +772,7 @@ function smartResponse(text) {
         openYouTube();
 
         return;
+
     }
 
 
@@ -613,33 +786,46 @@ function smartResponse(text) {
         openGitHub();
 
         return;
+
     }
 
 
     // GOOGLE SEARCH
 
     if (
-        q.startsWith("search google for") ||
-        q.startsWith("google search for") ||
-        q.startsWith("search for")
+        q.startsWith(
+            "search google for"
+        ) ||
+        q.startsWith(
+            "google search for"
+        ) ||
+        q.startsWith(
+            "search for"
+        )
     ) {
 
         googleSearch(text);
 
         return;
+
     }
 
 
     // CODING
 
     if (
-        q.includes("help me with coding") ||
-        q.includes("help me code")
+        q.includes(
+            "help me with coding"
+        ) ||
+        q.includes(
+            "help me code"
+        )
     ) {
 
         codingHelp();
 
         return;
+
     }
 
 
@@ -647,6 +833,7 @@ function smartResponse(text) {
 
     const calculation =
         calculateExpression(text);
+
 
     if (calculation !== null) {
 
@@ -657,10 +844,11 @@ function smartResponse(text) {
         );
 
         return;
+
     }
 
 
-    // EVERYTHING ELSE → WEB KNOWLEDGE
+    // WEB KNOWLEDGE
 
     askWebAI(text);
 }
@@ -675,11 +863,18 @@ function sendCommand() {
     const text =
         input.value.trim();
 
+
     if (!text) {
         return;
     }
 
+
     input.value = "";
+
+
+    // Remember user's message
+    rememberUser(text);
+
 
     smartResponse(text);
 }
@@ -709,7 +904,9 @@ input.addEventListener(
     "keydown",
     (event) => {
 
-        if (event.key === "Enter") {
+        if (
+            event.key === "Enter"
+        ) {
 
             unlockSpeech();
 
@@ -749,12 +946,13 @@ if (SpeechRecognition) {
     recognition =
         new SpeechRecognition();
 
+
     recognition.continuous = false;
+
     recognition.interimResults = false;
+
     recognition.lang = "en-US";
 
-
-    // VOICE START
 
     recognition.onstart = () => {
 
@@ -768,23 +966,26 @@ if (SpeechRecognition) {
     };
 
 
-    // VOICE RESULT
-
     recognition.onresult = (event) => {
 
         const transcript =
-            event.results[0][0].transcript;
+            event.results[0][0]
+                .transcript;
+
 
         input.value = transcript;
 
         isListening = false;
 
+
+        // Remember voice command
+        rememberUser(transcript);
+
+
         smartResponse(transcript);
 
     };
 
-
-    // VOICE ERROR
 
     recognition.onerror = (event) => {
 
@@ -792,13 +993,17 @@ if (SpeechRecognition) {
 
         setCoreState(null);
 
+
         console.log(
             "Voice error:",
             event.error
         );
 
 
-        if (event.error === "not-allowed") {
+        if (
+            event.error ===
+            "not-allowed"
+        ) {
 
             reply(
                 "Microphone permission is blocked. " +
@@ -812,33 +1017,35 @@ if (SpeechRecognition) {
             );
 
         }
+
     };
 
-
-    // VOICE END
 
     recognition.onend = () => {
 
         isListening = false;
 
+
         if (
-            !core.classList.contains("speaking") &&
-            !core.classList.contains("thinking")
+            !core.classList.contains(
+                "speaking"
+            ) &&
+            !core.classList.contains(
+                "thinking"
+            )
         ) {
 
             setCoreState(null);
 
         }
+
     };
 
-
-    // MICROPHONE BUTTON
 
     micButton.addEventListener(
         "click",
         () => {
 
-            // Unlock speech BEFORE listening
             unlockSpeech();
 
 
@@ -847,6 +1054,7 @@ if (SpeechRecognition) {
                 recognition.stop();
 
                 return;
+
             }
 
 
@@ -862,6 +1070,7 @@ if (SpeechRecognition) {
                 );
 
             }
+
         }
     );
 
@@ -878,6 +1087,7 @@ if (SpeechRecognition) {
 
         }
     );
+
 }
 
 
@@ -886,5 +1096,5 @@ if (SpeechRecognition) {
 // ==========================================
 
 console.log(
-    "JARVIS V5.1 ONLINE"
+    "JARVIS V6.0 ONLINE — MEMORY ENABLED"
 );
