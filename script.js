@@ -1,5 +1,6 @@
 // ==========================================
-// JARVIS V7.1 — FEMALE AI VOICE
+// JARVIS V7.2 — SMOOTH FEMALE VOICE
+// + IMPROVED VOICE RECOGNITION
 // ==========================================
 
 const input = document.getElementById("commandInput");
@@ -13,6 +14,8 @@ const coreWrapper = document.querySelector(".core-wrapper");
 
 let recognition;
 let isListening = false;
+
+let availableVoices = [];
 
 
 // ==========================================
@@ -53,14 +56,7 @@ function saveConversation() {
             JSON.stringify(conversation)
         );
 
-    } catch (error) {
-
-        console.log(
-            "Memory save error:",
-            error
-        );
-
-    }
+    } catch {}
 
 }
 
@@ -68,11 +64,8 @@ function saveConversation() {
 function rememberUser(text) {
 
     conversation.push({
-
         role: "user",
-
         content: text
-
     });
 
     saveConversation();
@@ -83,11 +76,8 @@ function rememberUser(text) {
 function rememberJarvis(text) {
 
     conversation.push({
-
         role: "assistant",
-
         content: text
-
     });
 
     saveConversation();
@@ -119,7 +109,7 @@ function clearMemory() {
 
 
 // ==========================================
-// TIME
+// CLOCK
 // ==========================================
 
 function updateTime() {
@@ -128,13 +118,9 @@ function updateTime() {
 
     systemTime.textContent =
         now.toLocaleTimeString([], {
-
             hour: "2-digit",
-
             minute: "2-digit",
-
             second: "2-digit"
-
         });
 
 }
@@ -165,7 +151,6 @@ function setCoreState(state) {
     if (state) {
 
         core.classList.add(state);
-
         coreWrapper.classList.add(state);
 
     }
@@ -174,20 +159,13 @@ function setCoreState(state) {
 
 
 // ==========================================
-// FEMALE VOICE SYSTEM
+// LOAD VOICES
 // ==========================================
-
-let availableVoices = [];
-
 
 function loadVoices() {
 
-    if (
-        !("speechSynthesis" in window)
-    ) {
-
+    if (!("speechSynthesis" in window)) {
         return;
-
     }
 
     availableVoices =
@@ -195,13 +173,9 @@ function loadVoices() {
 
 }
 
-
 loadVoices();
 
-
-if (
-    "speechSynthesis" in window
-) {
+if ("speechSynthesis" in window) {
 
     speechSynthesis.onvoiceschanged =
         loadVoices;
@@ -215,25 +189,13 @@ if (
 
 function getFemaleVoice() {
 
-    if (
-        !availableVoices.length
-    ) {
+    loadVoices();
 
-        loadVoices();
-
-    }
-
-
-    if (
-        !availableVoices.length
-    ) {
-
+    if (!availableVoices.length) {
         return null;
-
     }
 
-
-    const femaleNames = [
+    const preferredNames = [
 
         "Samantha",
         "Karen",
@@ -247,45 +209,37 @@ function getFemaleVoice() {
         "Nicky",
         "Fiona",
         "Veena",
+        "Jenny",
+        "Zira",
         "Google UK English Female",
-        "Google US English Female",
-        "Microsoft Zira",
-        "Microsoft Jenny"
+        "Google US English Female"
 
     ];
 
 
-    // Look for known female voices
-
     for (
-        const preferred
-        of femaleNames
+        const name
+        of preferredNames
     ) {
 
-        const found =
+        const voice =
             availableVoices.find(
-                voice =>
-                    voice.name
+                v =>
+                    v.name
                         .toLowerCase()
                         .includes(
-                            preferred.toLowerCase()
+                            name.toLowerCase()
                         )
             );
 
-
-        if (found) {
-
-            return found;
-
+        if (voice) {
+            return voice;
         }
 
     }
 
 
-    // Look for voices that identify
-    // themselves as female
-
-    const femaleVoice =
+    const female =
         availableVoices.find(
             voice => {
 
@@ -293,39 +247,26 @@ function getFemaleVoice() {
                     voice.name.toLowerCase();
 
                 return (
-
                     name.includes("female") ||
-
                     name.includes("woman") ||
-
                     name.includes("samantha") ||
-
                     name.includes("karen") ||
-
                     name.includes("moira") ||
-
                     name.includes("tessa") ||
-
                     name.includes("victoria") ||
-
                     name.includes("ava")
-
                 );
 
             }
         );
 
 
-    if (femaleVoice) {
-
-        return femaleVoice;
-
+    if (female) {
+        return female;
     }
 
 
-    // Prefer English voice
-
-    const englishVoice =
+    const english =
         availableVoices.find(
             voice =>
                 voice.lang &&
@@ -335,7 +276,7 @@ function getFemaleVoice() {
         );
 
 
-    return englishVoice ||
+    return english ||
         availableVoices[0];
 
 }
@@ -347,23 +288,18 @@ function getFemaleVoice() {
 
 function unlockSpeech() {
 
-    if (
-        !("speechSynthesis" in window)
-    ) {
-
+    if (!("speechSynthesis" in window)) {
         return;
-
     }
 
-
     try {
+
+        speechSynthesis.cancel();
 
         const silent =
             new SpeechSynthesisUtterance("");
 
         silent.volume = 0;
-
-        silent.rate = 10;
 
         speechSynthesis.speak(
             silent
@@ -371,14 +307,21 @@ function unlockSpeech() {
 
         speechSynthesis.cancel();
 
-    } catch (error) {
+    } catch {}
 
-        console.log(
-            "Speech unlock error:",
-            error
-        );
+}
 
-    }
+
+// ==========================================
+// CLEAN TEXT FOR SPEECH
+// ==========================================
+
+function prepareSpeechText(text) {
+
+    return text
+        .replace(/https?:\/\/\S+/gi, "")
+        .replace(/\s+/g, " ")
+        .trim();
 
 }
 
@@ -389,19 +332,21 @@ function unlockSpeech() {
 
 function speak(text) {
 
-    if (
-        !("speechSynthesis" in window)
-    ) {
-
+    if (!("speechSynthesis" in window)) {
         return;
+    }
 
+    if (!text) {
+        return;
     }
 
 
-    if (!text) {
+    const speechText =
+        prepareSpeechText(text);
 
+
+    if (!speechText) {
         return;
-
     }
 
 
@@ -412,22 +357,21 @@ function speak(text) {
 
         const utterance =
             new SpeechSynthesisUtterance(
-                text
+                speechText
             );
 
 
-        const femaleVoice =
+        const voice =
             getFemaleVoice();
 
 
-        if (femaleVoice) {
+        if (voice) {
 
             utterance.voice =
-                femaleVoice;
+                voice;
 
             utterance.lang =
-                femaleVoice.lang ||
-                "en-US";
+                voice.lang || "en-US";
 
         } else {
 
@@ -437,15 +381,13 @@ function speak(text) {
         }
 
 
-        // ==================================
-        // FEMALE JARVIS SETTINGS
-        // ==================================
+        // Smooth female assistant voice
 
         utterance.rate =
-            0.92;
+            0.88;
 
         utterance.pitch =
-            1.02;
+            1.03;
 
         utterance.volume =
             1;
@@ -477,41 +419,6 @@ function speak(text) {
         speechSynthesis.speak(
             utterance
         );
-
-
-        // iOS Safari speech recovery
-
-        setTimeout(() => {
-
-            try {
-
-                speechSynthesis.resume();
-
-            } catch {}
-
-        }, 100);
-
-
-        setTimeout(() => {
-
-            try {
-
-                speechSynthesis.resume();
-
-            } catch {}
-
-        }, 500);
-
-
-        setTimeout(() => {
-
-            try {
-
-                speechSynthesis.resume();
-
-            } catch {}
-
-        }, 1000);
 
 
     } catch (error) {
@@ -599,12 +506,8 @@ function calculateExpression(text) {
             )();
 
 
-        if (
-            !Number.isFinite(result)
-        ) {
-
+        if (!Number.isFinite(result)) {
             return null;
-
         }
 
 
@@ -683,7 +586,6 @@ function openYouTube() {
         "Opening YouTube..."
     );
 
-
     setTimeout(() => {
 
         window.location.href =
@@ -699,7 +601,6 @@ function openGoogle() {
     reply(
         "Opening Google..."
     );
-
 
     setTimeout(() => {
 
@@ -717,7 +618,6 @@ function openGitHub() {
         "Opening GitHub..."
     );
 
-
     setTimeout(() => {
 
         window.location.href =
@@ -729,7 +629,7 @@ function openGitHub() {
 
 
 // ==========================================
-// TELL TIME
+// TIME
 // ==========================================
 
 function tellTime() {
@@ -889,10 +789,8 @@ async function askWebAI(question) {
                     method: "POST",
 
                     headers: {
-
                         "Content-Type":
                             "application/json"
-
                     },
 
                     body: JSON.stringify({
@@ -1195,9 +1093,7 @@ function sendCommand() {
 
 
     if (!text) {
-
         return;
-
     }
 
 
@@ -1229,7 +1125,7 @@ sendButton.addEventListener(
 
 
 // ==========================================
-// ENTER KEY
+// ENTER
 // ==========================================
 
 input.addEventListener(
@@ -1289,25 +1185,28 @@ if (SpeechRecognition) {
         false;
 
 
+    // English recognition
+
     recognition.lang =
-        "en-US";
+        "en-NG";
 
 
-    recognition.onstart = () => {
+    recognition.onstart =
+        () => {
 
-        isListening =
-            true;
-
-
-        setCoreState(
-            "listening"
-        );
+            isListening =
+                true;
 
 
-        response.textContent =
-            "Listening...";
+            setCoreState(
+                "listening"
+            );
 
-    };
+
+            response.textContent =
+                "Listening...";
+
+        };
 
 
     recognition.onresult =
@@ -1316,7 +1215,20 @@ if (SpeechRecognition) {
             const transcript =
                 event
                     .results[0][0]
-                    .transcript;
+                    .transcript
+                    .trim();
+
+
+            if (!transcript) {
+
+                isListening =
+                    false;
+
+                setCoreState(null);
+
+                return;
+
+            }
 
 
             input.value =
@@ -1352,7 +1264,7 @@ if (SpeechRecognition) {
 
 
             console.log(
-                "Voice error:",
+                "Voice recognition error:",
                 event.error
             );
 
@@ -1363,8 +1275,25 @@ if (SpeechRecognition) {
             ) {
 
                 reply(
-                    "Microphone permission is blocked. " +
-                    "Please allow microphone access for JARVIS."
+                    "Microphone permission is blocked. Please allow microphone access for JARVIS."
+                );
+
+            } else if (
+                event.error ===
+                "no-speech"
+            ) {
+
+                reply(
+                    "I didn't hear anything. Please try again."
+                );
+
+            } else if (
+                event.error ===
+                "audio-capture"
+            ) {
+
+                reply(
+                    "I can't access the microphone right now."
                 );
 
             } else {
@@ -1378,28 +1307,29 @@ if (SpeechRecognition) {
         };
 
 
-    recognition.onend = () => {
+    recognition.onend =
+        () => {
 
-        isListening =
-            false;
+            isListening =
+                false;
 
 
-        if (
-            !core.classList.contains(
-                "speaking"
-            ) &&
-            !core.classList.contains(
-                "thinking"
-            )
-        ) {
+            if (
+                !core.classList.contains(
+                    "speaking"
+                ) &&
+                !core.classList.contains(
+                    "thinking"
+                )
+            ) {
 
-            setCoreState(
-                null
-            );
+                setCoreState(
+                    null
+                );
 
-        }
+            }
 
-    };
+        };
 
 
     micButton.addEventListener(
@@ -1456,5 +1386,5 @@ if (SpeechRecognition) {
 // ==========================================
 
 console.log(
-    "JARVIS V7.1 ONLINE — FEMALE VOICE ENABLED"
+    "JARVIS V7.2 ONLINE — SMOOTH VOICE MODE"
 );
