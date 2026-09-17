@@ -8,7 +8,13 @@ const micButton = document.getElementById("micButton");
 const response = document.getElementById("response");
 const systemTime = document.getElementById("systemTime");
 
+const core = document.querySelector(".ai-core");
+const coreWrapper = document.querySelector(".core-wrapper");
 
+function setCoreState(state) {
+    core.className = "ai-core " + state;
+    coreWrapper.className = "core-wrapper " + state;
+}
 // ================================
 // CLOCK
 // ================================
@@ -38,7 +44,9 @@ function speak(text) {
     }
 
     window.speechSynthesis.cancel();
-
+    
+setCoreState("speaking");
+    
     const voice = new SpeechSynthesisUtterance(text);
 
     voice.rate = 0.95;
@@ -46,7 +54,10 @@ function speak(text) {
     voice.volume = 1;
 
     window.speechSynthesis.speak(voice);
-}
+
+voice.onend = function() {
+    setCoreState("idle");
+};
 
 
 // ================================
