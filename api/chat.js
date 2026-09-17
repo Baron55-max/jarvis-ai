@@ -1,7 +1,7 @@
-// JARVIS V10 - FREE WEB KNOWLEDGE + CONVERSATION CONTEXT
+// JARVIS V11
+// FREE WEB KNOWLEDGE + REAL FOLLOW-UP ANSWERS
 
 export default async function handler(req, res) {
-    // Only allow POST requests
     if (req.method !== "POST") {
         return res.status(405).json({
             error: "Method not allowed"
@@ -21,56 +21,40 @@ export default async function handler(req, res) {
             });
         }
 
-        // --------------------------------------------------
+        // -----------------------------
         // HELPERS
-        // --------------------------------------------------
+        // -----------------------------
 
-        function cleanText(text) {
-            return String(text || "")
-                .replace(/\s+/g, " ")
+        const clean = (text) =>
+            String(text || "")
                 .replace(/<[^>]*>/g, "")
+                .replace(/\s+/g, " ")
                 .trim();
-        }
 
-        function isFollowUp(text) {
-            const lower = text.toLowerCase();
-
-            return (
-                /\b(he|him|his|she|her|hers|they|them|their|it|its)\b/.test(lower) ||
-                /^(what|when|where|who|how|why|which|is|was|did|does|can|could|tell me)\b/.test(lower) &&
-                lower.split(/\s+/).length <= 10
-            );
-        }
-
-        function getPreviousUserMessage() {
+        function previousUserQuestion() {
             for (let i = conversation.length - 1; i >= 0; i--) {
-                const item = conversation[i];
-
                 if (
-                    item &&
-                    item.role === "user" &&
-                    item.content &&
-                    String(item.content).trim() !== message
+                    conversation[i] &&
+                    conversation[i].role === "user" &&
+                    String(conversation[i].content || "").trim() !== message
                 ) {
-                    return String(item.content).trim();
+                    return String(conversation[i].content).trim();
                 }
             }
 
             return "";
         }
 
-        function extractNameFromQuestion(text) {
-            const cleaned = cleanText(text);
-
+        function getSubject(text) {
             const patterns = [
                 /who is (.+?)[?!.]?$/i,
+                /who's (.+?)[?!.]?$/i,
                 /tell me about (.+?)[?!.]?$/i,
-                /what is (.+?)[?!.]?$/i,
-                /who's (.+?)[?!.]?$/i
+                /what is (.+?)[?!.]?$/i
             ];
 
             for (const pattern of patterns) {
-                const match = cleaned.match(pattern);
+                const match = text.match(pattern);
 
                 if (match && match[1]) {
                     return match[1].trim();
@@ -80,22 +64,36 @@ export default async function handler(req, res) {
             return "";
         }
 
-        function looksLikeAgeQuestion(text) {
+        function isFollowUp(text) {
             const lower = text.toLowerCase();
 
             return (
-                lower.includes("how old") ||
-                lower.includes("age") ||
-                lower.includes("years old")
+                /\b(he|him|his|she|her|hers|they|them|their|it|its)\b/.test(lower) ||
+                /^(how old|where is|where was|when was|when did|what team|which team|what country|what nationality|how tall|how many|what position|what club|what does)\b/i.test(lower)
             );
         }
 
-        function calculateAgeFromText(text) {
-            // Matches dates such as:
-            // born 5 February 1985
-            // born February 5, 1985
-            // born 5 Feb 1985
+        function getSearchQuery() {
+            const previous = previousUserQuestion();
 
+            if (!isFollowUp(message) || !previous) {
+                return message;
+            }
+
+            const subject = getSubject(previous);
+
+            if (subject) {
+                return `${subject} ${message}`;
+            }
+
+            return `${previous} ${message}`;
+        }
+
+        // -----------------------------
+        // AGE EXTRACTION
+        // -----------------------------
+
+        function getAge(text) {
             const months = {
                 january: 0,
                 february: 1,
@@ -108,94 +106,75 @@ export default async function handler(req, res) {
                 september: 8,
                 october: 9,
                 november: 10,
-                december: 11,
-
-                jan: 0,
-                feb: 1,
-                mar: 2,
-                apr: 3,
-                jun: 5,
-                jul: 6,
-                aug: 7,
-                sep: 8,
-                sept: 8,
-                oct: 9,
-                nov: 10,
-                dec: 11
+                december: 11
             };
 
-            let day;
-            let month;
-            let year;
-
             let match = text.match(
-                /born\s+(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\s+(\d{4})/i
+                /born\s+(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})/i
             );
-
-            if (match) {
-                day = Number(match[1]);
-                month = months[match[2].toLowerCase()];
-                year = Number(match[3]);
-            }
 
             if (!match) {
                 match = text.match(
-                    /born\s+(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\s+(\d{1,2}),?\s+(\d{4})/i
+                    /born\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(\d{4})/i
                 );
 
                 if (match) {
-                    month = months[match[1].toLowerCase()];
-                    day = Number(match[2]);
-                    year = Number(match[3]);
+                    const month = months[match[1].toLowerCase()];
+                    const day = Number(match[2]);
+                    const year = Number(match[3]);
+
+                    return calculateAge(year, month, day);
                 }
             }
 
-            if (!match || day === undefined || month === undefined || !year) {
-                return null;
+            if (match) {
+                const day = Number(match[1]);
+                const month = months[match[2].toLowerCase()];
+                const year = Number(match[3]);
+
+                return calculateAge(year, month, day);
             }
 
+            // Fallback for common Wikipedia format:
+            // (born 5 February 1985)
+            const fallback = text.match(
+                /\(born\s+(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})\)/i
+            );
+
+            if (fallback) {
+                const day = Number(fallback[1]);
+                const month = months[fallback[2].toLowerCase()];
+                const year = Number(fallback[3]);
+
+                return calculateAge(year, month, day);
+            }
+
+            return null;
+        }
+
+        function calculateAge(year, month, day) {
             const today = new Date();
 
             let age = today.getFullYear() - year;
 
-            const birthdayThisYear = new Date(
+            const birthday = new Date(
                 today.getFullYear(),
                 month,
                 day
             );
 
-            if (today < birthdayThisYear) {
+            if (today < birthday) {
                 age--;
             }
 
             return age;
         }
 
-        // --------------------------------------------------
-        // DETERMINE SEARCH QUERY
-        // --------------------------------------------------
-
-        let searchQuery = message;
-        let previousQuestion = "";
-
-        if (isFollowUp(message)) {
-            previousQuestion = getPreviousUserMessage();
-
-            if (previousQuestion) {
-                const previousSubject =
-                    extractNameFromQuestion(previousQuestion);
-
-                if (previousSubject) {
-                    searchQuery = `${previousSubject} ${message}`;
-                } else {
-                    searchQuery = `${previousQuestion} ${message}`;
-                }
-            }
-        }
-
-        // --------------------------------------------------
+        // -----------------------------
         // SEARCH WIKIPEDIA
-        // --------------------------------------------------
+        // -----------------------------
+
+        const searchQuery = getSearchQuery();
 
         const searchURL =
             "https://en.wikipedia.org/w/rest.php/v1/search/page?q=" +
@@ -218,40 +197,39 @@ export default async function handler(req, res) {
             ? searchData.pages
             : [];
 
-        if (pages.length === 0) {
+        if (!pages.length) {
             return res.status(200).json({
-                reply:
-                    "I couldn't find a reliable answer for that yet. Try asking me in a slightly different way.",
+                reply: "I couldn't find reliable information about that.",
                 source: "Wikipedia",
-                memoryUsed: Boolean(previousQuestion)
+                memoryUsed: Boolean(previousUserQuestion())
             });
         }
 
-        // --------------------------------------------------
-        // PICK THE MOST RELEVANT RESULT
-        // --------------------------------------------------
+        // -----------------------------
+        // CHOOSE RESULT
+        // -----------------------------
 
-        let selectedPage = pages[0];
+        let page = pages[0];
 
         const lowerQuery = searchQuery.toLowerCase();
 
-        for (const page of pages) {
-            const title = String(page.title || "").toLowerCase();
+        for (const item of pages) {
+            const title = String(item.title || "").toLowerCase();
 
             if (
                 lowerQuery.includes(title) ||
                 title.includes(lowerQuery)
             ) {
-                selectedPage = page;
+                page = item;
                 break;
             }
         }
 
-        const title = selectedPage.title;
+        const title = page.title;
 
-        // --------------------------------------------------
-        // GET THE ACTUAL ARTICLE SUMMARY
-        // --------------------------------------------------
+        // -----------------------------
+        // GET ARTICLE
+        // -----------------------------
 
         const summaryURL =
             "https://en.wikipedia.org/api/rest_v1/page/summary/" +
@@ -264,36 +242,102 @@ export default async function handler(req, res) {
         });
 
         if (!summaryResponse.ok) {
-            throw new Error("Wikipedia summary failed");
+            throw new Error("Wikipedia article failed");
         }
 
         const summaryData = await summaryResponse.json();
 
-        let answer = cleanText(summaryData.extract);
+        const article = clean(
+            summaryData.extract ||
+            page.excerpt ||
+            page.description ||
+            ""
+        );
 
-        if (!answer) {
-            answer = cleanText(
-                selectedPage.excerpt ||
-                selectedPage.description ||
-                ""
-            );
+        if (!article) {
+            return res.status(200).json({
+                reply: "I found the topic, but I couldn't retrieve enough information to answer that.",
+                source: "Wikipedia",
+                title
+            });
         }
 
-        // --------------------------------------------------
-        // AGE QUESTIONS
-        // --------------------------------------------------
+        // -----------------------------
+        // ANSWER SPECIFIC QUESTIONS
+        // -----------------------------
 
-        if (looksLikeAgeQuestion(message)) {
-            const age = calculateAgeFromText(answer);
+        const lowerMessage = message.toLowerCase();
+
+        // AGE
+        if (
+            lowerMessage.includes("how old") ||
+            lowerMessage === "age" ||
+            lowerMessage.includes("years old")
+        ) {
+            const age = getAge(article);
 
             if (age !== null) {
-                answer = `According to the available information, ${title} is ${age} years old.`;
+                return res.status(200).json({
+                    reply: `${title} is ${age} years old.`,
+                    source: "Wikipedia",
+                    title,
+                    memoryUsed: true
+                });
             }
         }
 
-        // --------------------------------------------------
-        // KEEP RESPONSE CLEAN
-        // --------------------------------------------------
+        // NATIONALITY
+        if (
+            lowerMessage.includes("nationality") ||
+            lowerMessage.includes("where is he from") ||
+            lowerMessage.includes("where is she from") ||
+            lowerMessage.includes("where was he born") ||
+            lowerMessage.includes("where was she born")
+        ) {
+            const sentences = article.split(/(?<=[.!?])\s+/);
+
+            const useful = sentences.find(sentence =>
+                /born|portuguese|british|american|nigerian|german|french|spanish|italian/i.test(sentence)
+            );
+
+            if (useful) {
+                return res.status(200).json({
+                    reply: clean(useful),
+                    source: "Wikipedia",
+                    title,
+                    memoryUsed: true
+                });
+            }
+        }
+
+        // TEAM / CLUB
+        if (
+            lowerMessage.includes("what team") ||
+            lowerMessage.includes("which team") ||
+            lowerMessage.includes("what club") ||
+            lowerMessage.includes("which club")
+        ) {
+            const sentences = article.split(/(?<=[.!?])\s+/);
+
+            const useful = sentences.find(sentence =>
+                /club|plays for|plays as|team|captains/i.test(sentence)
+            );
+
+            if (useful) {
+                return res.status(200).json({
+                    reply: clean(useful),
+                    source: "Wikipedia",
+                    title,
+                    memoryUsed: true
+                });
+            }
+        }
+
+        // -----------------------------
+        // NORMAL ANSWER
+        // -----------------------------
+
+        let answer = article;
 
         if (answer.length > 1200) {
             answer = answer.substring(0, 1200);
@@ -311,16 +355,14 @@ export default async function handler(req, res) {
             reply: answer,
             source: "Wikipedia",
             title,
-            memoryUsed: Boolean(previousQuestion),
-            searchQuery
+            memoryUsed: Boolean(previousUserQuestion())
         });
 
     } catch (error) {
-        console.error("JARVIS ERROR:", error);
+        console.error("JARVIS V11 ERROR:", error);
 
         return res.status(500).json({
-            reply:
-                "Sorry, I ran into a problem while searching for that information.",
+            reply: "Sorry, I ran into a problem while getting that information.",
             error: error.message
         });
     }
