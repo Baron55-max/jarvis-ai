@@ -1,5 +1,5 @@
 // ================================
-// JARVIS V3.2 - VOICE FIX
+// JARVIS V3.1 - COMMAND SYSTEM
 // ================================
 
 const input = document.getElementById("commandInput");
@@ -64,10 +64,6 @@ function speak(text) {
         setCoreState("idle");
     };
 
-    voice.onerror = function() {
-        setCoreState("idle");
-    };
-
     window.speechSynthesis.speak(voice);
 }
 
@@ -94,7 +90,6 @@ function runCommand(command) {
         const reply = `The current time is ${time}.`;
 
         response.textContent = reply;
-
         speak(reply);
 
         return true;
@@ -120,7 +115,6 @@ function runCommand(command) {
         const reply = `Today is ${date}.`;
 
         response.textContent = reply;
-
         speak(reply);
 
         return true;
@@ -133,7 +127,6 @@ function runCommand(command) {
         const reply = "Opening YouTube.";
 
         response.textContent = reply;
-
         speak(reply);
 
         setTimeout(() => {
@@ -150,7 +143,6 @@ function runCommand(command) {
         const reply = "Opening Google.";
 
         response.textContent = reply;
-
         speak(reply);
 
         setTimeout(() => {
@@ -167,7 +159,6 @@ function runCommand(command) {
         const reply = "Opening GitHub.";
 
         response.textContent = reply;
-
         speak(reply);
 
         setTimeout(() => {
@@ -189,7 +180,6 @@ function runCommand(command) {
             "Good evening. JARVIS systems are online. How may I assist you?";
 
         response.textContent = reply;
-
         speak(reply);
 
         return true;
@@ -222,7 +212,6 @@ function sendCommand() {
             "I don't have that command yet. My AI systems require an API connection for that request.";
 
         response.textContent = reply;
-
         speak(reply);
     }
 }
@@ -300,20 +289,7 @@ if (SpeechRecognition) {
 
         input.value = transcript;
 
-        // Give the browser a moment to finish
-        // the microphone session before speaking.
-        setTimeout(() => {
-            sendCommand();
-        }, 150);
-
-    };
-
-
-    recognition.onend = function() {
-
-        if (core.classList.contains("listening")) {
-            setCoreState("idle");
-        }
+        sendCommand();
 
     };
 
@@ -325,7 +301,7 @@ if (SpeechRecognition) {
 
         setCoreState("idle");
 
-    });
+    };
 
 } else {
 
