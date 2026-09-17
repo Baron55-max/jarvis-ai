@@ -1,5 +1,5 @@
 // ================================
-// JARVIS V3 - COMMAND SYSTEM
+// JARVIS V3.1 - COMMAND SYSTEM
 // ================================
 
 const input = document.getElementById("commandInput");
@@ -11,10 +11,17 @@ const systemTime = document.getElementById("systemTime");
 const core = document.querySelector(".ai-core");
 const coreWrapper = document.querySelector(".core-wrapper");
 
+
+// ================================
+// CORE STATE
+// ================================
+
 function setCoreState(state) {
     core.className = "ai-core " + state;
     coreWrapper.className = "core-wrapper " + state;
 }
+
+
 // ================================
 // CLOCK
 // ================================
@@ -44,20 +51,21 @@ function speak(text) {
     }
 
     window.speechSynthesis.cancel();
-    
-setCoreState("speaking");
-    
+
+    setCoreState("speaking");
+
     const voice = new SpeechSynthesisUtterance(text);
 
     voice.rate = 0.95;
     voice.pitch = 0.85;
     voice.volume = 1;
 
-    window.speechSynthesis.speak(voice);
+    voice.onend = function() {
+        setCoreState("idle");
+    };
 
-voice.onend = function() {
-    setCoreState("idle");
-};
+    window.speechSynthesis.speak(voice);
+}
 
 
 // ================================
@@ -67,6 +75,7 @@ voice.onend = function() {
 function runCommand(command) {
 
     const text = command.toLowerCase().trim();
+
 
     // TIME
     if (text.includes("what time") || text === "time") {
@@ -167,7 +176,8 @@ function runCommand(command) {
         text.includes("hello jarvis")
     ) {
 
-        const reply = "Good evening. JARVIS systems are online. How may I assist you?";
+        const reply =
+            "Good evening. JARVIS systems are online. How may I assist you?";
 
         response.textContent = reply;
         speak(reply);
@@ -256,9 +266,12 @@ if (SpeechRecognition) {
     recognition.interimResults = false;
     recognition.lang = "en-US";
 
+
     micButton.addEventListener("click", function() {
 
         response.textContent = "Listening...";
+
+        setCoreState("listening");
 
         try {
             recognition.start();
@@ -267,6 +280,7 @@ if (SpeechRecognition) {
         }
 
     });
+
 
     recognition.onresult = function(event) {
 
@@ -279,10 +293,13 @@ if (SpeechRecognition) {
 
     };
 
+
     recognition.onerror = function() {
 
         response.textContent =
             "I couldn't hear you. Please try again.";
+
+        setCoreState("idle");
 
     };
 
@@ -292,6 +309,8 @@ if (SpeechRecognition) {
 
         response.textContent =
             "Voice recognition isn't supported here.";
+
+        setCoreState("idle");
 
     });
 
