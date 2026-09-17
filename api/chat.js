@@ -1,5 +1,5 @@
 // ==========================================
-// JARVIS V6.0 — WEB KNOWLEDGE + MEMORY API
+// JARVIS V7.0 — WEB KNOWLEDGE + CONTEXT
 // ==========================================
 
 export default async function handler(req, res) {
@@ -33,7 +33,101 @@ export default async function handler(req, res) {
 
 
         // ==========================================
-        // SEARCH QUERY
+        // GET RECENT USER QUESTIONS
+        // ==========================================
+
+        const recentUsers =
+            conversation
+                .filter(item =>
+                    item &&
+                    item.role === "user" &&
+                    typeof item.content === "string"
+                )
+                .map(item => item.content.trim())
+                .filter(Boolean)
+                .slice(-5);
+
+
+        // ==========================================
+        // DETECT FOLLOW-UP QUESTIONS
+        // ==========================================
+
+        const lower =
+            message.toLowerCase();
+
+
+        const followUpPatterns = [
+
+            /\bhe\b/,
+            /\bhim\b/,
+            /\bhis\b/,
+            /\bshe\b/,
+            /\bher\b/,
+            /\bthey\b/,
+            /\bthem\b/,
+            /\btheir\b/,
+            /\bit\b/,
+            /\bthat\b/,
+            /\bthis\b/,
+            /\bthere\b/,
+            /\bthat person\b/,
+            /\bwhat about\b/,
+            /\band what\b/,
+            /\bhow old\b/,
+            /\bwhere does\b/,
+            /\bwhere did\b/,
+            /\bwhen did\b/,
+            /\bwhen was\b/,
+            /\bwhich club\b/,
+            /\bwhat club\b/
+        ];
+
+
+        const isFollowUp =
+            followUpPatterns.some(
+                pattern =>
+                    pattern.test(lower)
+            );
+
+
+        // ==========================================
+        // BUILD SEARCH QUERY
+        // ==========================================
+
+        let searchQuestion =
+            message;
+
+
+        if (
+            isFollowUp &&
+            recentUsers.length >= 2
+        ) {
+
+            const previousQuestion =
+                recentUsers[
+                    recentUsers.length - 2
+                ];
+
+            searchQuestion =
+                previousQuestion +
+                " " +
+                message;
+
+        } else if (
+            isFollowUp &&
+            recentUsers.length === 1
+        ) {
+
+            searchQuestion =
+                recentUsers[0] +
+                " " +
+                message;
+
+        }
+
+
+        // ==========================================
+        // WIKIPEDIA SEARCH
         // ==========================================
 
         const searchURL =
@@ -41,7 +135,7 @@ export default async function handler(req, res) {
             "?action=query" +
             "&list=search" +
             "&srsearch=" +
-            encodeURIComponent(message) +
+            encodeURIComponent(searchQuestion) +
             "&srlimit=5" +
             "&srprop=snippet" +
             "&format=json" +
@@ -90,7 +184,7 @@ export default async function handler(req, res) {
 
 
         // ==========================================
-        // BUILD WEB ANSWER
+        // BUILD ANSWER
         // ==========================================
 
         let answer = "";
@@ -107,16 +201,12 @@ export default async function handler(req, res) {
                     item.snippet || "";
 
 
-                // Remove HTML tags
-
                 snippet =
                     snippet.replace(
                         /<[^>]*>/g,
                         ""
                     );
 
-
-                // Decode HTML characters
 
                 snippet =
                     snippet
@@ -177,67 +267,59 @@ export default async function handler(req, res) {
 
 
         // ==========================================
-        // MEMORY CONTEXT
+        // REMOVE DUPLICATE SENTENCES
         // ==========================================
-        //
-        // The browser sends recent conversation
-        // history. We use it to improve follow-up
-        // questions when possible.
-        //
 
-        const recentConversation =
-            conversation
-                .slice(-6)
-                .filter(item =>
-                    item &&
-                    typeof item.content === "string"
-                );
+        const sentences =
+            answer
+                .split(/(?<=[.!?])\s+/);
 
 
-        if (
-            recentConversation.length > 0 &&
-            message.length < 40
+        const uniqueSentences = [];
+
+
+        for (
+            const sentence
+            of sentences
         ) {
 
-            const previousUserMessages =
-                recentConversation
-                    .filter(
-                        item =>
-                            item.role === "user"
-                    )
-                    .map(
-                        item =>
-                            item.content
-                    );
+            const clean =
+                sentence.trim();
 
 
             if (
-                previousUserMessages.length > 0
+                clean &&
+                !uniqueSentences.some(
+                    existing =>
+                        existing
+                            .toLowerCase()
+                            === clean.toLowerCase()
+                )
             ) {
 
-                answer =
-                    answer +
-                    " This answer relates to your recent question about " +
-                    previousUserMessages[
-                        previousUserMessages.length - 1
-                    ] +
-                    ".";
+                uniqueSentences.push(
+                    clean
+                );
 
             }
 
         }
 
 
+        answer =
+            uniqueSentences.join(" ");
+
+
         // ==========================================
         // LIMIT ANSWER
         // ==========================================
 
-        if (answer.length > 1100) {
+        if (answer.length > 1000) {
 
             answer =
                 answer.substring(
                     0,
-                    1100
+                    1000
                 );
 
 
@@ -262,7 +344,7 @@ export default async function handler(req, res) {
 
 
         // ==========================================
-        // RESPONSE
+        // SEND RESPONSE
         // ==========================================
 
         return res.status(200).json({
@@ -271,10 +353,12 @@ export default async function handler(req, res) {
 
             source: "Wikipedia",
 
-            title: results[0].title,
+            title:
+                results[0].title,
 
             memoryUsed:
-                recentConversation.length > 0
+                isFollowUp &&
+                recentUsers.length > 0
 
         });
 
