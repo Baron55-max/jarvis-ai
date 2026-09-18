@@ -1,5 +1,5 @@
 // ==========================================
-// JARVIS V8.1 — FRIENDLY BOSS MODE
+// JARVIS V9 — FRIENDLY BOSS MODE + ELEVENLABS
 // ==========================================
 const input = document.getElementById("commandInput");
 const sendButton = document.getElementById("sendButton");
@@ -10,7 +10,6 @@ const core = document.querySelector(".ai-core");
 const coreWrapper = document.querySelector(".core-wrapper");
 let recognition;
 let isListening = false;
-let availableVoices = [];
 // ==========================================
 // CONVERSATION MEMORY
 // ==========================================
@@ -49,11 +48,10 @@ function rememberJarvis(text) {
     saveConversation();
 }
 // ==========================================
-// FRIENDLY JARVIS PERSONALITY
+// FRIENDLY PERSONALITY
 // ==========================================
 function friendly(text, pidgin = false) {
     const lower = text.toLowerCase();
-    // Already naturally friendly
     if (
         lower.includes("boss") ||
         lower.includes("my guy") ||
@@ -61,44 +59,11 @@ function friendly(text, pidgin = false) {
     ) {
         return text;
     }
-    const chance = Math.random();
-    if (pidgin) {
-        if (chance < 0.35) {
-            return "Boss, " + text;
-        }
-        return text;
-    }
-    if (chance < 0.35) {
+    if (Math.random() < 0.35) {
         return "Boss, " + text;
     }
     return text;
 }
-// ==========================================
-// CLEAR MEMORY
-// ==========================================
-function clearMemory() {
-    conversation = [];
-    try {
-        localStorage.removeItem("jarvisConversation");
-    } catch {}
-    reply(
-        "Boss, I don clear our conversation memory."
-    );
-}
-// ==========================================
-// CLOCK
-// ==========================================
-function updateTime() {
-    const now = new Date();
-    systemTime.textContent =
-        now.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit"
-        });
-}
-setInterval(updateTime, 1000);
-updateTime();
 // ==========================================
 // CORE STATE
 // ==========================================
@@ -119,68 +84,62 @@ function setCoreState(state) {
     }
 }
 // ==========================================
-// LOAD VOICES
+// CLOCK
 // ==========================================
-function loadVoices() {
-    if (!("speechSynthesis" in window)) {
-        return;
-    }
-    availableVoices =
-        speechSynthesis.getVoices();
+function updateTime() {
+    const now = new Date();
+    systemTime.textContent =
+        now.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit"
+        });
 }
-loadVoices();
-if ("speechSynthesis" in window) {
-    speechSynthesis.onvoiceschanged =
-        loadVoices;
-}
+setInterval(updateTime, 1000);
+updateTime();
 // ==========================================
-// FIND SMOOTH FEMALE VOICE
+// PIDGIN DETECTION
 // ==========================================
-function getFemaleVoice() {
-    loadVoices();
-    if (!availableVoices.length) {
-        return null;
-    }
-    const preferredNames = [
-        "Samantha",
-        "Karen",
-        "Moira",
-        "Tessa",
-        "Victoria",
-        "Ava",
-        "Allison",
-        "Susan",
-        "Zoe",
-        "Nicky",
-        "Fiona",
-        "Veena",
-        "Jenny",
-        "Zira",
-        "Google UK English Female",
-        "Google US English Female"
+function isPidgin(text) {
+    const q = text.toLowerCase();
+    const words = [
+        "abeg",
+        "wetin",
+        "dey",
+        "na",
+        "nko",
+        "abi",
+        "oya",
+        "wahala",
+        "una",
+        "dem",
+        "fit",
+        "sha",
+        "sef",
+        "buh",
+        "make i",
+        "make we",
+        "i wan",
+        "i dey",
+        "you dey",
+        "how far",
+        "how body",
+        "no wahala",
+        "bros",
+        "my guy",
+        "my gee",
+        "guy",
+        "wetin be",
+        "which one",
+        "how much",
+        "where e dey",
+        "e dey",
+        "dey work",
+        "dey do"
     ];
-    for (const name of preferredNames) {
-        const voice =
-            availableVoices.find(
-                v =>
-                    v.name
-                        .toLowerCase()
-                        .includes(name.toLowerCase())
-            );
-        if (voice) {
-            return voice;
-        }
-    }
-    const english =
-        availableVoices.find(
-            voice =>
-                voice.lang &&
-                voice.lang
-                    .toLowerCase()
-                    .startsWith("en")
-        );
-    return english ||
-        availableVoices[0];
+    return words.some(
+        word => q.includes(word)
+    );
 }
 // ==========================================
 // SPEECH UNLOCK
@@ -199,60 +158,7 @@ function unlockSpeech() {
     } catch {}
 }
 // ==========================================
-// DETECT NIGERIAN PIDGIN
-// ==========================================
-function isPidgin(text) {
-    const q =
-        text.toLowerCase();
-    const pidginWords = [
-        "abeg",
-        "wetin",
-        "dey",
-        "na",
-        "no be",
-        "nko",
-        "abi",
-        "oya",
-        "wahala",
-        "una",
-        "dem",
-        "am",
-        "go",
-        "fit",
-        "sha",
-        "sef",
-        "buh",
-        "make i",
-        "make we",
-        "i wan",
-        "i dey",
-        "you dey",
-        "how far",
-        "how body",
-        "e be like",
-        "no wahala",
-        "bros",
-        "my guy",
-        "my gee",
-        "guy",
-        "wetin be",
-        "which one",
-        "how much",
-        "where e dey",
-        "e dey",
-        "dey work",
-        "dey do"
-    ];
-    let matches = 0;
-    for (const word of pidginWords) {
-        if (q.includes(word)) {
-            matches++;
-        }
-    }
-    return matches >= 1;
-}
-// ==========================================
-// PREPARE SPEECH
+// PREPARE TEXT
 // ==========================================
 function prepareSpeechText(text) {
     return text
@@ -263,12 +169,10 @@ function prepareSpeechText(text) {
         .trim();
 }
 // ==========================================
-// SPEAK
+// ELEVENLABS VOICE
 // ==========================================
-function speak(text) {
-    if (!("speechSynthesis" in window)) {
-        return;
-    }
+let currentAudio = null;
+async function speak(text) {
     if (!text) {
         return;
     }
@@ -278,41 +182,80 @@ function speak(text) {
         return;
     }
     try {
-        speechSynthesis.cancel();
-        const utterance =
-            new SpeechSynthesisUtterance(
-                speechText
-            );
-        const voice =
-            getFemaleVoice();
-        if (voice) {
-            utterance.voice = voice;
-            utterance.lang =
-                voice.lang || "en-US";
-        } else {
-            utterance.lang = "en-US";
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio.currentTime = 0;
         }
-        // KEEPING YOUR FORMER VOICE SETTINGS
-        utterance.rate = 0.86;
-        utterance.pitch = 1.02;
-        utterance.volume = 1;
-        utterance.onstart = () => {
-            setCoreState("speaking");
-        };
-        utterance.onend = () => {
+        setCoreState("speaking");
+        const result =
+            await fetch(
+                "/api/tts",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+                    body: JSON.stringify({
+                        text: speechText
+                    })
+                }
+            );
+        if (!result.ok) {
+            throw new Error(
+                "ElevenLabs voice failed"
+            );
+        }
+        const audioBlob =
+            await result.blob();
+        const audioUrl =
+            URL.createObjectURL(
+                audioBlob
+            );
+        currentAudio =
+            new Audio(audioUrl);
+        currentAudio.volume = 1;
+        currentAudio.onended = () => {
             setCoreState(null);
+            URL.revokeObjectURL(
+                audioUrl
+            );
         };
-        utterance.onerror = () => {
+        currentAudio.onerror = () => {
             setCoreState(null);
+            URL.revokeObjectURL(
+                audioUrl
+            );
         };
-        speechSynthesis.speak(
-            utterance
-        );
+        await currentAudio.play();
     } catch (error) {
-        console.log(
-            "Speech error:",
+        console.error(
+            "ElevenLabs voice error:",
             error
         );
+        setCoreState(null);
+        // Fallback to browser voice
+        if ("speechSynthesis" in window) {
+            try {
+                speechSynthesis.cancel();
+                const utterance =
+                    new SpeechSynthesisUtterance(
+                        speechText
+                    );
+                utterance.lang = "en-NG";
+                utterance.rate = 0.86;
+                utterance.pitch = 1.02;
+                utterance.onstart = () => {
+                    setCoreState("speaking");
+                };
+                utterance.onend = () => {
+                    setCoreState(null);
+                };
+                speechSynthesis.speak(
+                    utterance
+                );
+            } catch {}
+        }
     }
 }
 // ==========================================
@@ -330,6 +273,20 @@ function reply(
     if (shouldSpeak) {
         speak(text);
     }
+}
+// ==========================================
+// CLEAR MEMORY
+// ==========================================
+function clearMemory() {
+    conversation = [];
+    try {
+        localStorage.removeItem(
+            "jarvisConversation"
+        );
+    } catch {}
+    reply(
+        "Boss, I've cleared our conversation memory."
+    );
 }
 // ==========================================
 // CALCULATOR
@@ -392,20 +349,14 @@ function googleSearch(query) {
             .trim();
     if (!cleanQuery) {
         reply(
-            isPidgin(query)
-                ? "Boss, wetin you want make I search?"
-                : "Boss, what would you like me to search for?"
+            "Boss, what should I search for?"
         );
         return;
     }
     reply(
-        isPidgin(query)
-            ? "Boss, I dey search Google for " +
-              cleanQuery +
-              "..."
-            : "Boss, I'm searching Google for " +
-              cleanQuery +
-              "..."
+        "Boss, I'm searching Google for " +
+        cleanQuery +
+        "..."
     );
     setTimeout(() => {
         window.location.href =
@@ -420,9 +371,7 @@ function googleSearch(query) {
 // ==========================================
 function openYouTube() {
     reply(
-        isPidgin(input.value)
-            ? "Boss, I dey open YouTube."
-            : "Boss, I'm opening YouTube."
+        "Boss, I'm opening YouTube."
     );
     setTimeout(() => {
         window.location.href =
@@ -457,19 +406,15 @@ function tellTime(pidgin = false) {
             hour: "numeric",
             minute: "2-digit"
         });
-    if (pidgin) {
-        reply(
-            "Boss, the time now na " +
-            time +
-            "."
-        );
-    } else {
-        reply(
-            "Boss, the current time is " +
-            time +
-            "."
-        );
-    }
+    reply(
+        pidgin
+            ? "Boss, the time now na " +
+              time +
+              "."
+            : "Boss, the current time is " +
+              time +
+              "."
+    );
 }
 // ==========================================
 // DATE
@@ -483,73 +428,45 @@ function tellDate(pidgin = false) {
             day: "numeric",
             year: "numeric"
         });
-    if (pidgin) {
-        reply(
-            "Boss, today na " +
-            date +
-            "."
-        );
-    } else {
-        reply(
-            "Boss, today is " +
-            date +
-            "."
-        );
-    }
+    reply(
+        pidgin
+            ? "Boss, today na " +
+              date +
+              "."
+            : "Boss, today is " +
+              date +
+              "."
+    );
 }
 // ==========================================
 // IDENTITY
 // ==========================================
 function identity(pidgin = false) {
-    if (pidgin) {
-        reply(
-            "I be JARVIS, your personal AI assistant, Boss. " +
-            "I dey here to help you with questions, search, " +
-            "calculations and plenty other things."
-        );
-    } else {
-        reply(
-            "I'm JARVIS, your personal AI assistant, Boss. " +
-            "I'm here to help you with questions, search, " +
-            "calculations and plenty more."
-        );
-    }
+    reply(
+        pidgin
+            ? "I be JARVIS, your personal AI assistant, Boss. I dey here to help you."
+            : "I'm JARVIS, your personal AI assistant, Boss. I'm here to help you."
+    );
 }
 // ==========================================
 // CAPABILITIES
 // ==========================================
 function capabilities(pidgin = false) {
-    if (pidgin) {
-        reply(
-            "Boss, I fit understand your voice, talk back to you, " +
-            "search web knowledge, remember our recent conversation, " +
-            "calculate numbers, tell you time and date, " +
-            "and open websites."
-        );
-    } else {
-        reply(
-            "Boss, I can understand your voice, speak my responses, " +
-            "search web knowledge, remember recent conversations, " +
-            "calculate numbers, tell you the time and date, " +
-            "and open websites."
-        );
-    }
+    reply(
+        pidgin
+            ? "Boss, I fit answer questions, search the web, calculate things, remember our recent conversation, talk to you, and open websites."
+            : "Boss, I can answer questions, search the web, calculate things, remember our recent conversation, speak to you, and open websites."
+    );
 }
 // ==========================================
 // CODING
 // ==========================================
 function codingHelp(pidgin = false) {
-    if (pidgin) {
-        reply(
-            "Boss, I fit help you with HTML, CSS, JavaScript, " +
-            "Python, C and other programming languages."
-        );
-    } else {
-        reply(
-            "Boss, I can help you with HTML, CSS, JavaScript, " +
-            "Python, C and other programming languages."
-        );
-    }
+    reply(
+        pidgin
+            ? "Boss, I fit help you with HTML, CSS, JavaScript, Python, C and plenty other programming languages."
+            : "Boss, I can help you with HTML, CSS, JavaScript, Python, C and plenty of other programming languages."
+    );
 }
 // ==========================================
 // GREETING
@@ -559,40 +476,43 @@ function greeting(pidgin = false) {
         const greetings = [
             "How far, Boss? I dey here. Wetin you wan do?",
             "Omo, Boss don show. How I fit help you?",
-            "I dey listen, Boss. Just tell me wetin you need.",
-            "No wahala, Boss. JARVIS dey online and ready.",
-            "Welcome back, Boss. Wetin we dey work on today?"
+            "I dey listen, Boss. Wetin you need?",
+            "No wahala, Boss. JARVIS dey online.",
+            "Welcome back, Boss. Wetin we dey work on?"
         ];
-        const random =
+        reply(
             greetings[
                 Math.floor(
                     Math.random() *
                     greetings.length
                 )
-            ];
-        reply(random);
+            ]
+        );
     } else {
         const greetings = [
             "Good to hear from you, Boss. How can I assist?",
             "Welcome back, Boss. Systems are ready.",
             "At your service, Boss. What's the command?",
-            "I'm listening, Boss. What would you like me to do?",
-            "Good morning, Boss. What are we working on today?"
+            "I'm listening, Boss. What are we working on?",
+            "Good to see you, Boss. What can I do for you?"
         ];
-        const random =
+        reply(
             greetings[
                 Math.floor(
                     Math.random() *
                     greetings.length
                 )
-            ];
-        reply(random);
+            ]
+        );
     }
 }
 // ==========================================
 // WEB KNOWLEDGE
 // ==========================================
-async function askWebAI(question, pidgin = false) {
+async function askWebAI(
+    question,
+    pidgin = false
+) {
     setCoreState("thinking");
     response.textContent =
         pidgin
@@ -635,8 +555,6 @@ async function askWebAI(question, pidgin = false) {
             answer =
                 convertToPidgin(answer);
         }
-        // Make web answers feel friendly
-        // without forcing "Boss" into every answer.
         answer =
             friendly(
                 answer,
@@ -655,15 +573,13 @@ async function askWebAI(question, pidgin = false) {
         setCoreState(null);
         reply(
             pidgin
-                ? "Boss, I no fit reach my web knowledge right now. " +
-                  "Try make I search Google for am."
-                : "Boss, I couldn't access my web knowledge right now. " +
-                  "Try asking me to search Google for it."
+                ? "Boss, I no fit reach my web knowledge right now. Try make I search Google for am."
+                : "Boss, I couldn't access my web knowledge right now. Try asking me to search Google for it."
         );
     }
 }
 // ==========================================
-// BASIC ENGLISH → PIDGIN STYLE
+// ENGLISH → PIDGIN
 // ==========================================
 function convertToPidgin(text) {
     let answer = text;
@@ -685,13 +601,15 @@ function convertToPidgin(text) {
         [/\bDo not\b/gi, "No"],
         [/\bDon't\b/gi, "No"],
         [/\bCannot\b/gi, "No fit"],
-        [/\bCan not\b/gi, "No fit"],
         [/\bPlease\b/gi, "Abeg"],
         [/\bNo problem\b/gi, "No wahala"],
         [/\bcurrently\b/gi, "now"],
         [/\bvery\b/gi, "well well"]
     ];
-    for (const [pattern, replacement] of replacements) {
+    for (const [
+        pattern,
+        replacement
+    ] of replacements) {
         answer =
             answer.replace(
                 pattern,
@@ -867,7 +785,7 @@ sendButton.addEventListener(
 // ==========================================
 input.addEventListener(
     "keydown",
-    (event) => {
+    event => {
         if (event.key === "Enter") {
             unlockSpeech();
             sendCommand();
@@ -908,7 +826,7 @@ if (SpeechRecognition) {
                 "Listening, Boss...";
         };
     recognition.onresult =
-        (event) => {
+        event => {
             const transcript =
                 event
                     .results[0][0]
@@ -930,7 +848,7 @@ if (SpeechRecognition) {
             );
         };
     recognition.onerror =
-        (event) => {
+        event => {
             isListening = false;
             setCoreState(null);
             console.log(
@@ -1010,5 +928,5 @@ if (SpeechRecognition) {
 // STARTUP
 // ==========================================
 console.log(
-    "JARVIS V8.1 ONLINE — FRIENDLY BOSS MODE"
+    "JARVIS V9 ONLINE — ELEVENLABS VOICE"
 );
