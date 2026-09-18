@@ -1,6 +1,7 @@
 // ==========================================
-// JARVIS V9 — FRIENDLY BOSS MODE + ELEVENLABS
+// JARVIS V10 — FRIENDLY BOSS + SMART VOICE
 // ==========================================
+
 const input = document.getElementById("commandInput");
 const sendButton = document.getElementById("sendButton");
 const micButton = document.getElementById("micButton");
@@ -8,12 +9,17 @@ const response = document.getElementById("response");
 const systemTime = document.getElementById("systemTime");
 const core = document.querySelector(".ai-core");
 const coreWrapper = document.querySelector(".core-wrapper");
+
 let recognition;
 let isListening = false;
+let currentAudio = null;
+
 // ==========================================
 // CONVERSATION MEMORY
 // ==========================================
+
 let conversation = [];
+
 try {
     conversation =
         JSON.parse(
@@ -22,10 +28,12 @@ try {
 } catch {
     conversation = [];
 }
+
 function saveConversation() {
     if (conversation.length > 20) {
         conversation = conversation.slice(-20);
     }
+
     try {
         localStorage.setItem(
             "jarvisConversation",
@@ -33,25 +41,32 @@ function saveConversation() {
         );
     } catch {}
 }
+
 function rememberUser(text) {
     conversation.push({
         role: "user",
         content: text
     });
+
     saveConversation();
 }
+
 function rememberJarvis(text) {
     conversation.push({
         role: "assistant",
         content: text
     });
+
     saveConversation();
 }
+
 // ==========================================
 // FRIENDLY PERSONALITY
 // ==========================================
-function friendly(text, pidgin = false) {
+
+function friendly(text) {
     const lower = text.toLowerCase();
+
     if (
         lower.includes("boss") ||
         lower.includes("my guy") ||
@@ -59,35 +74,44 @@ function friendly(text, pidgin = false) {
     ) {
         return text;
     }
+
     if (Math.random() < 0.35) {
         return "Boss, " + text;
     }
+
     return text;
 }
+
 // ==========================================
 // CORE STATE
 // ==========================================
+
 function setCoreState(state) {
     core.classList.remove(
         "listening",
         "thinking",
         "speaking"
     );
+
     coreWrapper.classList.remove(
         "listening",
         "thinking",
         "speaking"
     );
+
     if (state) {
         core.classList.add(state);
         coreWrapper.classList.add(state);
     }
 }
+
 // ==========================================
 // CLOCK
 // ==========================================
+
 function updateTime() {
     const now = new Date();
+
     systemTime.textContent =
         now.toLocaleTimeString([], {
             hour: "2-digit",
@@ -95,18 +119,21 @@ function updateTime() {
             second: "2-digit"
         });
 }
+
 setInterval(updateTime, 1000);
 updateTime();
+
 // ==========================================
 // PIDGIN DETECTION
 // ==========================================
+
 function isPidgin(text) {
     const q = text.toLowerCase();
+
     const words = [
         "abeg",
         "wetin",
         "dey",
-        "na",
         "nko",
         "abi",
         "oya",
@@ -137,29 +164,38 @@ function isPidgin(text) {
         "dey work",
         "dey do"
     ];
+
     return words.some(
         word => q.includes(word)
     );
 }
+
 // ==========================================
 // SPEECH UNLOCK
 // ==========================================
+
 function unlockSpeech() {
     if (!("speechSynthesis" in window)) {
         return;
     }
+
     try {
         speechSynthesis.cancel();
+
         const silent =
             new SpeechSynthesisUtterance("");
+
         silent.volume = 0;
+
         speechSynthesis.speak(silent);
         speechSynthesis.cancel();
     } catch {}
 }
+
 // ==========================================
-// PREPARE TEXT
+// PREPARE SPEECH
 // ==========================================
+
 function prepareSpeechText(text) {
     return text
         .replace(/https?:\/\/\S+/gi, "")
@@ -168,130 +204,174 @@ function prepareSpeechText(text) {
         .replace(/\s+/g, " ")
         .trim();
 }
+
 // ==========================================
 // ELEVENLABS VOICE
 // ==========================================
-let currentAudio = null;
+
 async function speak(text) {
+
     if (!text) {
         return;
     }
+
     const speechText =
         prepareSpeechText(text);
+
     if (!speechText) {
         return;
     }
+
     try {
+
         if (currentAudio) {
             currentAudio.pause();
             currentAudio.currentTime = 0;
         }
+
         setCoreState("speaking");
+
         const result =
             await fetch(
                 "/api/tts",
                 {
                     method: "POST",
+
                     headers: {
                         "Content-Type":
                             "application/json"
                     },
+
                     body: JSON.stringify({
                         text: speechText
                     })
                 }
             );
+
         if (!result.ok) {
             throw new Error(
                 "ElevenLabs voice failed"
             );
         }
+
         const audioBlob =
             await result.blob();
+
         const audioUrl =
             URL.createObjectURL(
                 audioBlob
             );
+
         currentAudio =
             new Audio(audioUrl);
+
         currentAudio.volume = 1;
+
         currentAudio.onended = () => {
             setCoreState(null);
+
             URL.revokeObjectURL(
                 audioUrl
             );
         };
+
         currentAudio.onerror = () => {
             setCoreState(null);
+
             URL.revokeObjectURL(
                 audioUrl
             );
         };
+
         await currentAudio.play();
+
     } catch (error) {
+
         console.error(
             "ElevenLabs voice error:",
             error
         );
+
         setCoreState(null);
-        // Fallback to browser voice
+
+        // Browser fallback
         if ("speechSynthesis" in window) {
+
             try {
+
                 speechSynthesis.cancel();
+
                 const utterance =
                     new SpeechSynthesisUtterance(
                         speechText
                     );
+
                 utterance.lang = "en-NG";
                 utterance.rate = 0.86;
                 utterance.pitch = 1.02;
+
                 utterance.onstart = () => {
                     setCoreState("speaking");
                 };
+
                 utterance.onend = () => {
                     setCoreState(null);
                 };
+
                 speechSynthesis.speak(
                     utterance
                 );
+
             } catch {}
         }
     }
 }
+
 // ==========================================
 // REPLY
 // ==========================================
+
 function reply(
     text,
     shouldSpeak = true,
     remember = true
 ) {
     response.textContent = text;
+
     if (remember) {
         rememberJarvis(text);
     }
+
     if (shouldSpeak) {
         speak(text);
     }
 }
+
 // ==========================================
 // CLEAR MEMORY
 // ==========================================
+
 function clearMemory() {
+
     conversation = [];
+
     try {
         localStorage.removeItem(
             "jarvisConversation"
         );
     } catch {}
+
     reply(
         "Boss, I've cleared our conversation memory."
     );
 }
+
 // ==========================================
 // CALCULATOR
 // ==========================================
+
 function calculateExpression(text) {
+
     let expression =
         text
             .toLowerCase()
@@ -306,8 +386,9 @@ function calculateExpression(text) {
             .replace(/divided by/g, "/")
             .replace(/over/g, "/")
             .replace(/into/g, "*")
-            .replace(/x/g, "*")
+            .replace(/\bx\b/g, "*")
             .trim();
+
     if (
         !/^[0-9+\-*/().%\s]+$/.test(
             expression
@@ -315,23 +396,31 @@ function calculateExpression(text) {
     ) {
         return null;
     }
+
     try {
+
         const result =
             Function(
                 `"use strict"; return (${expression})`
             )();
+
         if (!Number.isFinite(result)) {
             return null;
         }
+
         return result;
+
     } catch {
         return null;
     }
 }
+
 // ==========================================
 // GOOGLE SEARCH
 // ==========================================
+
 function googleSearch(query) {
+
     const cleanQuery =
         query
             .replace(
@@ -347,65 +436,93 @@ function googleSearch(query) {
                 ""
             )
             .trim();
+
     if (!cleanQuery) {
+
         reply(
             "Boss, what should I search for?"
         );
+
         return;
     }
+
     reply(
         "Boss, I'm searching Google for " +
         cleanQuery +
         "..."
     );
+
     setTimeout(() => {
+
         window.location.href =
             "https://www.google.com/search?q=" +
             encodeURIComponent(
                 cleanQuery
             );
+
     }, 1200);
 }
+
 // ==========================================
-// OPEN WEBSITES
+// WEBSITES
 // ==========================================
+
 function openYouTube() {
+
     reply(
         "Boss, I'm opening YouTube."
     );
+
     setTimeout(() => {
+
         window.location.href =
             "https://www.youtube.com";
+
     }, 1200);
 }
+
 function openGoogle() {
+
     reply(
         "Boss, I'm opening Google."
     );
+
     setTimeout(() => {
+
         window.location.href =
             "https://www.google.com";
+
     }, 1200);
 }
+
 function openGitHub() {
+
     reply(
         "Boss, I'm opening GitHub."
     );
+
     setTimeout(() => {
+
         window.location.href =
             "https://github.com";
+
     }, 1200);
 }
+
 // ==========================================
 // TIME
 // ==========================================
+
 function tellTime(pidgin = false) {
+
     const now = new Date();
+
     const time =
         now.toLocaleTimeString([], {
             hour: "numeric",
             minute: "2-digit"
         });
+
     reply(
         pidgin
             ? "Boss, the time now na " +
@@ -416,11 +533,15 @@ function tellTime(pidgin = false) {
               "."
     );
 }
+
 // ==========================================
 // DATE
 // ==========================================
+
 function tellDate(pidgin = false) {
+
     const now = new Date();
+
     const date =
         now.toLocaleDateString([], {
             weekday: "long",
@@ -428,6 +549,7 @@ function tellDate(pidgin = false) {
             day: "numeric",
             year: "numeric"
         });
+
     reply(
         pidgin
             ? "Boss, today na " +
@@ -438,41 +560,54 @@ function tellDate(pidgin = false) {
               "."
     );
 }
+
 // ==========================================
 // IDENTITY
 // ==========================================
+
 function identity(pidgin = false) {
+
     reply(
         pidgin
             ? "I be JARVIS, your personal AI assistant, Boss. I dey here to help you."
             : "I'm JARVIS, your personal AI assistant, Boss. I'm here to help you."
     );
 }
+
 // ==========================================
 // CAPABILITIES
 // ==========================================
+
 function capabilities(pidgin = false) {
+
     reply(
         pidgin
             ? "Boss, I fit answer questions, search the web, calculate things, remember our recent conversation, talk to you, and open websites."
             : "Boss, I can answer questions, search the web, calculate things, remember our recent conversation, speak to you, and open websites."
     );
 }
+
 // ==========================================
 // CODING
 // ==========================================
+
 function codingHelp(pidgin = false) {
+
     reply(
         pidgin
             ? "Boss, I fit help you with HTML, CSS, JavaScript, Python, C and plenty other programming languages."
             : "Boss, I can help you with HTML, CSS, JavaScript, Python, C and plenty of other programming languages."
     );
 }
+
 // ==========================================
 // GREETING
 // ==========================================
+
 function greeting(pidgin = false) {
+
     if (pidgin) {
+
         const greetings = [
             "How far, Boss? I dey here. Wetin you wan do?",
             "Omo, Boss don show. How I fit help you?",
@@ -480,6 +615,7 @@ function greeting(pidgin = false) {
             "No wahala, Boss. JARVIS dey online.",
             "Welcome back, Boss. Wetin we dey work on?"
         ];
+
         reply(
             greetings[
                 Math.floor(
@@ -488,7 +624,9 @@ function greeting(pidgin = false) {
                 )
             ]
         );
+
     } else {
+
         const greetings = [
             "Good to hear from you, Boss. How can I assist?",
             "Welcome back, Boss. Systems are ready.",
@@ -496,6 +634,7 @@ function greeting(pidgin = false) {
             "I'm listening, Boss. What are we working on?",
             "Good to see you, Boss. What can I do for you?"
         ];
+
         reply(
             greetings[
                 Math.floor(
@@ -506,71 +645,89 @@ function greeting(pidgin = false) {
         );
     }
 }
+
 // ==========================================
 // WEB KNOWLEDGE
 // ==========================================
+
 async function askWebAI(
     question,
     pidgin = false
 ) {
+
     setCoreState("thinking");
+
     response.textContent =
         pidgin
             ? "Boss, make I check my web knowledge..."
             : "Boss, let me check my web knowledge...";
+
     try {
+
         const result =
             await fetch(
                 "/api/chat",
                 {
                     method: "POST",
+
                     headers: {
                         "Content-Type":
                             "application/json"
                     },
+
                     body: JSON.stringify({
                         message: question,
+
                         conversation:
                             conversation.slice(-10)
                     })
                 }
             );
+
         const data =
             await result.json();
+
         if (!result.ok) {
             throw new Error(
                 data.error ||
                 "Request failed"
             );
         }
+
         if (!data.reply) {
             throw new Error(
                 "No response received"
             );
         }
+
         setCoreState(null);
+
         let answer =
             data.reply;
+
         if (pidgin) {
             answer =
                 convertToPidgin(answer);
         }
+
         answer =
-            friendly(
-                answer,
-                pidgin
-            );
+            friendly(answer);
+
         reply(
             answer,
             true,
             true
         );
+
     } catch (error) {
+
         console.error(
             "JARVIS WEB ERROR:",
             error
         );
+
         setCoreState(null);
+
         reply(
             pidgin
                 ? "Boss, I no fit reach my web knowledge right now. Try make I search Google for am."
@@ -578,11 +735,15 @@ async function askWebAI(
         );
     }
 }
+
 // ==========================================
 // ENGLISH → PIDGIN
 // ==========================================
+
 function convertToPidgin(text) {
+
     let answer = text;
+
     const replacements = [
         [/\bI am\b/gi, "I be"],
         [/\bI'm\b/gi, "I dey"],
@@ -606,34 +767,73 @@ function convertToPidgin(text) {
         [/\bcurrently\b/gi, "now"],
         [/\bvery\b/gi, "well well"]
     ];
+
     for (const [
         pattern,
         replacement
     ] of replacements) {
+
         answer =
             answer.replace(
                 pattern,
                 replacement
             );
     }
+
     return answer;
 }
+
+// ==========================================
+// VOICE CORRECTION
+// ==========================================
+
+function cleanVoiceTranscript(text) {
+
+    let cleaned =
+        text
+            .trim()
+            .replace(/\s+/g, " ");
+
+    // Common speech-recognition mistakes
+    // for the JARVIS wake name.
+    cleaned =
+        cleaned.replace(
+            /\b(edith|edet|edit|javis|jarvis's|jarvises)\b/gi,
+            "Jarvis"
+        );
+
+    cleaned =
+        cleaned.replace(
+            /\bjarvis alpha\b/gi,
+            "Jarvis"
+        );
+
+    return cleaned;
+}
+
 // ==========================================
 // SMART COMMAND SYSTEM
 // ==========================================
+
 function smartResponse(text) {
+
     const q =
         text.toLowerCase().trim();
+
     const pidgin =
         isPidgin(text);
+
     if (!q) {
+
         reply(
             pidgin
                 ? "I dey listen, Boss."
                 : "I'm listening, Boss."
         );
+
         return;
     }
+
     // CLEAR MEMORY
     if (
         q === "clear memory" ||
@@ -643,6 +843,7 @@ function smartResponse(text) {
         clearMemory();
         return;
     }
+
     // GREETINGS
     if (
         q === "hello" ||
@@ -657,6 +858,7 @@ function smartResponse(text) {
         greeting(pidgin);
         return;
     }
+
     // IDENTITY
     if (
         q.includes("who are you") ||
@@ -665,6 +867,7 @@ function smartResponse(text) {
         identity(pidgin);
         return;
     }
+
     // CAPABILITIES
     if (
         q.includes("what can you do") ||
@@ -673,6 +876,7 @@ function smartResponse(text) {
         capabilities(pidgin);
         return;
     }
+
     // TIME
     if (
         q.includes("what time is it") ||
@@ -683,6 +887,7 @@ function smartResponse(text) {
         tellTime(pidgin);
         return;
     }
+
     // DATE
     if (
         q.includes("what is today's date") ||
@@ -694,6 +899,7 @@ function smartResponse(text) {
         tellDate(pidgin);
         return;
     }
+
     // GOOGLE
     if (
         q === "open google" ||
@@ -702,6 +908,7 @@ function smartResponse(text) {
         openGoogle();
         return;
     }
+
     // YOUTUBE
     if (
         q === "open youtube" ||
@@ -710,6 +917,7 @@ function smartResponse(text) {
         openYouTube();
         return;
     }
+
     // GITHUB
     if (
         q === "open github" ||
@@ -718,6 +926,7 @@ function smartResponse(text) {
         openGitHub();
         return;
     }
+
     // GOOGLE SEARCH
     if (
         q.startsWith("search google for") ||
@@ -727,6 +936,7 @@ function smartResponse(text) {
         googleSearch(text);
         return;
     }
+
     // CODING
     if (
         q.includes("help me with coding") ||
@@ -736,10 +946,13 @@ function smartResponse(text) {
         codingHelp(pidgin);
         return;
     }
+
     // CALCULATOR
     const calculation =
         calculateExpression(text);
+
     if (calculation !== null) {
+
         reply(
             pidgin
                 ? "Boss, the answer na " +
@@ -749,142 +962,207 @@ function smartResponse(text) {
                   calculation +
                   "."
         );
+
         return;
     }
+
     // WEB KNOWLEDGE
     askWebAI(
         text,
         pidgin
     );
 }
+
 // ==========================================
 // SEND COMMAND
 // ==========================================
+
 function sendCommand() {
+
     const text =
         input.value.trim();
+
     if (!text) {
         return;
     }
+
     input.value = "";
+
     rememberUser(text);
+
     smartResponse(text);
 }
+
 // ==========================================
 // SEND BUTTON
 // ==========================================
+
 sendButton.addEventListener(
     "click",
     () => {
+
         unlockSpeech();
         sendCommand();
+
     }
 );
+
 // ==========================================
 // ENTER KEY
 // ==========================================
+
 input.addEventListener(
     "keydown",
     event => {
+
         if (event.key === "Enter") {
+
             unlockSpeech();
             sendCommand();
+
         }
     }
 );
+
 // ==========================================
 // QUICK COMMAND
 // ==========================================
+
 function quickCommand(command) {
+
     unlockSpeech();
+
     input.value =
         command;
+
     sendCommand();
 }
+
 // ==========================================
 // VOICE RECOGNITION
 // ==========================================
+
 const SpeechRecognition =
     window.SpeechRecognition ||
     window.webkitSpeechRecognition;
+
 if (SpeechRecognition) {
+
     recognition =
         new SpeechRecognition();
+
     recognition.continuous =
         false;
+
     recognition.interimResults =
         false;
+
+    // Nigerian English
     recognition.lang =
         "en-NG";
+
     recognition.onstart =
         () => {
+
             isListening = true;
+
             setCoreState(
                 "listening"
             );
+
             response.textContent =
                 "Listening, Boss...";
         };
+
     recognition.onresult =
         event => {
-            const transcript =
+
+            let transcript =
                 event
                     .results[0][0]
                     .transcript
                     .trim();
+
             if (!transcript) {
+
                 isListening = false;
                 setCoreState(null);
+
                 return;
             }
+
+            // Correct common recognition mistakes
+            transcript =
+                cleanVoiceTranscript(
+                    transcript
+                );
+
             input.value =
                 transcript;
+
             isListening = false;
+
             rememberUser(
                 transcript
             );
+
             smartResponse(
                 transcript
             );
         };
+
     recognition.onerror =
         event => {
+
             isListening = false;
+
             setCoreState(null);
+
             console.log(
                 "Voice recognition error:",
                 event.error
             );
+
             if (
                 event.error ===
                 "not-allowed"
             ) {
+
                 reply(
                     "Boss, abeg allow microphone access for JARVIS."
                 );
+
             } else if (
                 event.error ===
                 "no-speech"
             ) {
+
                 reply(
                     "Boss, I no hear anything. Try again."
                 );
+
             } else if (
                 event.error ===
                 "audio-capture"
             ) {
+
                 reply(
                     "Boss, I no fit access the microphone right now."
                 );
+
             } else {
+
                 reply(
                     "Boss, I no understand that one. Try again."
                 );
             }
         };
+
     recognition.onend =
         () => {
+
             isListening = false;
+
             if (
                 !core.classList.contains(
                     "speaking"
@@ -896,17 +1174,26 @@ if (SpeechRecognition) {
                 setCoreState(null);
             }
         };
+
     micButton.addEventListener(
         "click",
         () => {
+
             unlockSpeech();
+
             if (isListening) {
+
                 recognition.stop();
+
                 return;
             }
+
             try {
+
                 recognition.start();
+
             } catch (error) {
+
                 console.log(
                     "Recognition start error:",
                     error
@@ -914,19 +1201,25 @@ if (SpeechRecognition) {
             }
         }
     );
+
 } else {
+
     micButton.addEventListener(
         "click",
         () => {
+
             reply(
                 "Boss, voice recognition is not supported by this browser."
             );
+
         }
     );
 }
+
 // ==========================================
 // STARTUP
 // ==========================================
+
 console.log(
-    "JARVIS V9 ONLINE — ELEVENLABS VOICE"
+    "JARVIS V10 ONLINE — SMART VOICE"
 );
